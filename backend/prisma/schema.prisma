@@ -1,0 +1,476 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  password         String
+  name             String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  phoneNumber      String           @unique
+  otp              String?
+  role             Role             @default(CUSTOMER)
+  addresses        Address[]
+  deliveries       Delivery[]
+  deliveryStatuses DeliveryStatus[]
+  mealFeedback     MealFeedback[]
+  orders           Order[]
+  payments         Payment[]
+  subscription     Subscription?
+  feedback         Feedback[]
+  feedbackResponses FeedbackResponse[]
+  assignedIssues   Issue[]
+}
+
+model Meal {
+  id                  String               @id @default(uuid())
+  name                String
+  description         String
+  image               String?
+  category            String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  price               Float
+  type                MealType             @default(LUNCH)
+  breakfastDailyMeals DailyMeal[]          @relation("Breakfast")
+  dinnerDailyMeals    DailyMeal[]          @relation("Dinner")
+  lunchDailyMeals     DailyMeal[]          @relation("Lunch")
+  feedback            MealFeedback[]
+  OrderItem           OrderItem[]
+  productionSchedules ProductionSchedule[]
+  recipe              Recipe?
+  menuItems           MenuItem[]
+}
+
+model Subscription {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  status    String    @default("ACTIVE")
+  startDate DateTime  @default(now())
+  endDate   DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  orders    Order[]
+  payments  Payment[]
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Address {
+  id         String     @id @default(uuid())
+  userId     String
+  apartment  String
+  tower      String
+  floor      String
+  roomNumber String
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String
+  isDefault  Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  user       User       @relation(fields: [userId], references: [id])
+  deliveries Delivery[]
+}
+
+model Order {
+  id                   String          @id @default(uuid())
+  amount               Float
+  currency             String          @default("INR")
+  status               OrderStatus     @default(PENDING)
+  paymentStatus        String?         @default("PENDING")
+  paymentSessionId     String?
+  paymentLink          String?
+  paymentDetails       Json?
+  customerName         String
+  customerEmail        String
+  customerPhone        String
+  deliveryAddress      String?
+  deliveryInstructions String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  userId               String
+  subscriptionId       String?
+  delivery             Delivery?
+  deliveryStatus       DeliveryStatus?
+  subscription         Subscription?   @relation(fields: [subscriptionId], references: [id])
+  user                 User            @relation(fields: [userId], references: [id])
+  items                OrderItem[]
+  paymentMethod        String?
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  mealId    String
+  name      String
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  meal      Meal     @relation(fields: [mealId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+model Delivery {
+  id         String   @id @default(uuid())
+  orderId    String   @unique
+  userId     String
+  status     String   @default("PENDING")
+  address    String
+  addressId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  addressRel Address  @relation(fields: [addressId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Payment {
+  id               String        @id @default(uuid())
+  orderId          String        @unique
+  paymentId        String?
+  refundId         String?
+  amount           Float
+  currency         String
+  status           PaymentStatus
+  errorCode        String?
+  errorDescription String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  subscriptionId   String?
+  userId           String
+  subscription     Subscription? @relation(fields: [subscriptionId], references: [id])
+  user             User          @relation(fields: [userId], references: [id])
+}
+
+model DailyMeal {
+  id          String   @id @default(uuid())
+  date        DateTime
+  breakfastId String
+  lunchId     String
+  dinnerId    String
+  skipStatus  Json
+  cutoffTime  DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  breakfast   Meal     @relation("Breakfast", fields: [breakfastId], references: [id])
+  dinner      Meal     @relation("Dinner", fields: [dinnerId], references: [id])
+  lunch       Meal     @relation("Lunch", fields: [lunchId], references: [id])
+}
+
+model DeliveryStatus {
+  id                String              @id @default(uuid())
+  orderId           String              @unique
+  status            DeliveryStatusEnum
+  oldTiffinStatus   OldTiffinStatusEnum
+  deliveryTime      DateTime
+  deliveryPartnerId String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  deliveryPartner   User                @relation(fields: [deliveryPartnerId], references: [id])
+  order             Order               @relation(fields: [orderId], references: [id])
+}
+
+model MealFeedback {
+  id         String   @id @default(uuid())
+  mealId     String
+  userId     String
+  rating     Int
+  comments   String?
+  categories Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  meal       Meal     @relation(fields: [mealId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model InventoryItem {
+  id           String         @id @default(uuid())
+  name         String
+  currentStock Int
+  minimumStock Int
+  unit         String
+  lastUpdated  DateTime       @updatedAt
+  createdAt    DateTime       @default(now())
+  wasteRecords WasteRecord[]
+}
+
+model WasteRecord {
+  id        String        @id @default(uuid())
+  itemId    String
+  quantity  Int
+  reason    String
+  date      DateTime
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  item      InventoryItem @relation(fields: [itemId], references: [id])
+}
+
+model TiffinBox {
+  id           String              @id @default(uuid())
+  status       TiffinBoxStatusEnum
+  lastUsed     DateTime
+  damageReport String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+}
+
+model RawMaterial {
+  id              String           @id @default(uuid())
+  name            String
+  category        String
+  unit            String
+  currentStock    Float
+  minimumStock    Float
+  costPerUnit     Float
+  supplier        String?
+  lastUpdated     DateTime         @updatedAt
+  createdAt       DateTime         @default(now())
+  productionItems ProductionItem[]
+  recipeItems     RecipeItem[]
+}
+
+model Recipe {
+  id              String       @id @default(uuid())
+  name            String
+  description     String
+  instructions    String
+  preparationTime Int
+  cookingTime     Int
+  servings        Int
+  costPerServing  Float
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  mealId          String       @unique
+  meal            Meal         @relation(fields: [mealId], references: [id])
+  recipeItems     RecipeItem[]
+}
+
+model RecipeItem {
+  id            String      @id @default(uuid())
+  recipeId      String
+  rawMaterialId String
+  quantity      Float
+  unit          String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  rawMaterial   RawMaterial @relation(fields: [rawMaterialId], references: [id])
+  recipe        Recipe      @relation(fields: [recipeId], references: [id])
+
+  @@unique([recipeId, rawMaterialId])
+}
+
+model ProductionSchedule {
+  id        String           @id @default(uuid())
+  date      DateTime
+  mealType  MealType
+  status    ProductionStatus @default(PENDING)
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  mealId    String
+  items     ProductionItem[]
+  meal      Meal             @relation(fields: [mealId], references: [id])
+}
+
+model ProductionItem {
+  id                   String               @id @default(uuid())
+  productionScheduleId String
+  rawMaterialId        String
+  requiredQuantity     Float
+  actualQuantity       Float?
+  status               ProductionItemStatus @default(PENDING)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  productionSchedule   ProductionSchedule   @relation(fields: [productionScheduleId], references: [id])
+  rawMaterial          RawMaterial          @relation(fields: [rawMaterialId], references: [id])
+}
+
+model MenuItem {
+  id          String   @id @default(uuid())
+  mealId      String
+  meal        Meal     @relation(fields: [mealId], references: [id])
+  dailyMenuId String
+  dailyMenu   DailyMenu @relation(fields: [dailyMenuId], references: [id])
+  mealType    MealType
+  price       Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DailyMenu {
+  id          String     @id @default(uuid())
+  date        DateTime
+  items       MenuItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  calendar    MenuCalendar? @relation(fields: [calendarId], references: [id])
+  calendarId  String?
+}
+
+model MenuCalendar {
+  id          String      @id @default(uuid())
+  startDate   DateTime
+  endDate     DateTime
+  dailyMenus  DailyMenu[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Feedback {
+  id          String   @id @default(uuid())
+  userId      String
+  type        FeedbackType
+  title       String
+  description String
+  rating      Int?
+  status      FeedbackStatus @default(OPEN)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+  responses   FeedbackResponse[]
+  issues      Issue[]
+}
+
+model FeedbackResponse {
+  id          String   @id @default(uuid())
+  feedbackId  String
+  userId      String
+  message     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  feedback    Feedback @relation(fields: [feedbackId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Issue {
+  id          String   @id @default(uuid())
+  feedbackId  String
+  title       String
+  description String
+  priority    IssuePriority @default(MEDIUM)
+  status      IssueStatus   @default(OPEN)
+  assignedTo  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  feedback    Feedback @relation(fields: [feedbackId], references: [id])
+  user        User?    @relation(fields: [assignedTo], references: [id])
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  DELIVERY_PARTNER
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PREMIUM
+  CUSTOM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY_FOR_DELIVERY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryStatusEnum {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  DELIVERED
+  FAILED
+}
+
+enum OldTiffinStatusEnum {
+  NEW
+  USED
+  DAMAGED
+  LOST
+}
+
+enum TiffinBoxStatusEnum {
+  AVAILABLE
+  IN_USE
+  CLEANING
+  DAMAGED
+  LOST
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+enum ProductionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ProductionItemStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum FeedbackType {
+  GENERAL
+  MEAL_QUALITY
+  DELIVERY
+  SERVICE
+  OTHER
+}
+
+enum FeedbackStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
