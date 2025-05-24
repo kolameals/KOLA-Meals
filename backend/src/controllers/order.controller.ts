@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { OrderService } from '../services/order.service';
 import { AppError } from '../types/error.types';
 import logger from '../config/logger.config';
+import { AuthenticatedUser } from '../types';
 
 export class OrderController {
   private orderService: OrderService;
@@ -45,7 +46,7 @@ export class OrderController {
   createOrder = async (req: Request, res: Response) => {
     try {
       const orderData = req.body;
-      const userId = req.user?.id;
+      const userId = (req.user as AuthenticatedUser).id;
       if (!userId) {
         throw new AppError('User not authenticated', 401);
       }

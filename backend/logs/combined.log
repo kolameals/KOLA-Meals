@@ -1541,3 +1541,4 @@
 {"ip":"::1","level":"info","message":"Incoming request","method":"POST","path":"/api/auth/refresh-token","query":{},"requestId":"7a29c310-8995-444b-a541-708550a8d416","timestamp":"2025-05-24T13:29:28.563Z","userAgent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"}
 {"error":{"clientVersion":"5.22.0","code":"P1001","meta":{"database_host":"aws-0-ap-south-1.pooler.supabase.com","database_port":5432,"modelName":"User"},"name":"PrismaClientKnownRequestError"},"level":"error","message":"Token refresh error:","timestamp":"2025-05-24T13:29:28.570Z"}
 {"duration":"8ms","level":"info","message":"Request completed","method":"POST","path":"/refresh-token","requestId":"7a29c310-8995-444b-a541-708550a8d416","statusCode":401,"timestamp":"2025-05-24T13:29:28.571Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2025-05-24T14:18:05.384Z"}

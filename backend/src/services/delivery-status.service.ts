@@ -1,6 +1,7 @@
 import { AppError } from '../types/error.types';
 import prisma from '../lib/prisma';
 import logger from '../config/logger.config';
+import { DeliveryStatusEnum, OldTiffinStatusEnum } from '@prisma/client';
 
 export const deliveryStatusService = {
   async getDeliveryStatus(orderId: string) {
@@ -32,8 +33,8 @@ export const deliveryStatusService = {
 
   async updateDeliveryStatus(
     orderId: string,
-    status: 'PENDING' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'MISSED' | 'DELAYED',
-    oldTiffinStatus: 'COLLECTED' | 'NOT_COLLECTED' | 'PENDING',
+    status: DeliveryStatusEnum,
+    oldTiffinStatus: OldTiffinStatusEnum,
     deliveryPartnerId: string
   ) {
     try {
