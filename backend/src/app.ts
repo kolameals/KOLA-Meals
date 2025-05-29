@@ -8,7 +8,6 @@ import { requestLoggerMiddleware } from './middleware/request-logger.middleware'
 import { errorHandler } from './middleware/error.middleware';
 import apiRouter from './routes';
 import logger from './config/logger.config';
-import userRoutes from './routes/user.routes';
 import mealRoutes from './routes/meal.routes';
 import authRoutes from './routes/auth.routes';
 import rawMaterialRoutes from './routes/raw-material.routes';
@@ -19,6 +18,8 @@ import kitchenAnalyticsRoutes from './routes/kitchenAnalytics.routes';
 import customerAnalyticsRoutes from './routes/customerAnalytics.routes';
 import orderRoutes from './routes/order.routes';
 import inventoryRoutes from './routes/inventory.routes';
+import userManagementRoutes from './routes/userManagement.routes';
+import costRoutes from './routes/costs';
 
 const app = express();
 
@@ -40,18 +41,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
-app.use('/api', apiRouter);
-app.use('/api/users', userRoutes);
-app.use('/api/meals', mealRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/raw-materials', rawMaterialRoutes);
-app.use('/api/recipes', recipeRoutes);
-app.use('/api/menu-calendar', menuRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/analytics/kitchen', kitchenAnalyticsRoutes);
-app.use('/api/analytics/customer', customerAnalyticsRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/inventory', inventoryRoutes);
+app.use('/api/v1', apiRouter);
+app.use('/api/v1/meals', mealRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/raw-materials', rawMaterialRoutes);
+app.use('/api/v1/recipes', recipeRoutes);
+app.use('/api/v1/menu-calendar', menuRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/analytics/kitchen', kitchenAnalyticsRoutes);
+app.use('/api/v1/analytics/customer', customerAnalyticsRoutes);
+app.use('/api/v1/orders', orderRoutes);
+app.use('/api/v1/inventory', inventoryRoutes);
+app.use('/api/v1/users', userManagementRoutes);
+app.use('/api/v1/costs', costRoutes);
 
 // Error handling
 app.use(errorHandler);

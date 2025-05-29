@@ -1,8 +1,10 @@
 import { AppError } from '../types/error.types';
 import prisma from '../lib/prisma';
+import { Prisma, SubscriptionStatus } from '@prisma/client';
 
 interface CreateSubscriptionData {
   userId: string;
+  planId: string;
   status?: string;
   startDate?: Date;
   endDate?: Date;
@@ -15,7 +17,7 @@ interface UpdateSubscriptionData {
 }
 
 export const createSubscription = async (data: CreateSubscriptionData) => {
-  const { userId, status, startDate, endDate } = data;
+  const { userId, planId, status, startDate, endDate } = data;
 
   // Calculate end date (30 days from now) if not provided
   const calculatedEndDate = endDate || (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d; })();
@@ -23,7 +25,8 @@ export const createSubscription = async (data: CreateSubscriptionData) => {
   return prisma.subscription.create({
     data: {
       userId,
-      status: status || 'ACTIVE',
+      planId,
+      status: (status as SubscriptionStatus) || SubscriptionStatus.ACTIVE,
       startDate: startDate || new Date(),
       endDate: calculatedEndDate
     },
@@ -59,7 +62,10 @@ export const getSubscription = async (userId: string) => {
 export const updateSubscription = async (userId: string, data: UpdateSubscriptionData) => {
   return prisma.subscription.update({
     where: { userId },
-    data,
+    data: {
+      ...data,
+      status: data.status as SubscriptionStatus,
+    },
     include: {
       user: {
         select: {
@@ -77,7 +83,7 @@ export const cancelSubscription = async (userId: string) => {
   return prisma.subscription.update({
     where: { userId },
     data: {
-      status: 'CANCELLED'
+      status: SubscriptionStatus.CANCELLED
     },
     include: {
       user: {
@@ -96,7 +102,7 @@ export const pauseSubscription = async (userId: string) => {
   return prisma.subscription.update({
     where: { userId },
     data: {
-      status: 'PAUSED'
+      status: SubscriptionStatus.PAUSED
     },
     include: {
       user: {
@@ -115,7 +121,7 @@ export const resumeSubscription = async (userId: string) => {
   return prisma.subscription.update({
     where: { userId },
     data: {
-      status: 'ACTIVE'
+      status: SubscriptionStatus.ACTIVE
     },
     include: {
       user: {

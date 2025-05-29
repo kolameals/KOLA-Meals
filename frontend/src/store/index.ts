@@ -14,6 +14,7 @@ import inventoryReducer from './slices/inventorySlice'
 import feedbackReducer from './slices/feedbackSlice'
 import orderReducer from './slices/orderSlice'
 import userManagementReducer from './slices/userManagementSlice'
+import costReducer from './slices/costSlice'
 
 export const store = configureStore({
   reducer: {
@@ -29,13 +30,14 @@ export const store = configureStore({
     inventory: inventoryReducer,
     feedback: feedbackReducer,
     orders: orderReducer,
-    userManagement: userManagementReducer
+    userManagement: userManagementReducer,
+    costs: costReducer
   },
 })
 
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
-// Use throughout your app instead of plain `useDispatch` and `useSelector`
-export const useAppDispatch: () => AppDispatch = useDispatch
+// Export a hook that can be reused to resolve types
+export const useAppDispatch = () => useDispatch<AppDispatch>()
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector

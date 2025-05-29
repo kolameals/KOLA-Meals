@@ -9,13 +9,13 @@ import AuthInitializer from './components/AuthInitializer';
 import Welcome from './pages/Welcome';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Menu from './pages/Menu';
+// import Menu from './pages/Menu';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Dashboard from './pages/Dashboard';
 import CustomerDashboard from './pages/customer/Dashboard';
 import Profile from './pages/Profile';
-import DeliveryPartners from './pages/admin/DeliveryPartners';
+import DeliveryPartners from './pages/admin/users/DeliveryPartners';
 import AdminDashboard from './pages/admin/Dashboard';
 import Analytics from './pages/admin/analytics/Analytics';
 import CustomerAnalytics from './pages/admin/analytics/CustomerAnalytics';
@@ -26,6 +26,7 @@ import Recipes from './pages/admin/kitchen/Recipes';
 import Production from './pages/admin/kitchen/Production';
 import MenuManagement from './pages/admin/menu/MenuManagement';
 import MenuCalendar from './pages/admin/menu/MenuCalendar';
+import CompanyCosts from './pages/admin/company/CompanyCosts';
 import Inventory from './pages/admin/operations/Inventory';
 import FeedbackManagement from './pages/admin/feedback/FeedbackManagement';
 import OrderManagement from './pages/admin/orders/OrderManagement';
@@ -117,7 +118,7 @@ const App = () => {
               </PublicRoute>
             }
           />
-          <Route path={ROUTES.MENU} element={<Menu />} />
+          {/* <Route path={ROUTES.MENU} element={<Menu />} /> */}
           <Route path={ROUTES.ABOUT} element={<About />} />
           <Route path={ROUTES.CONTACT} element={<Contact />} />
 
@@ -201,6 +202,14 @@ const App = () => {
             element={
               <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <MealManagement />
+              </RoleProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.ADMIN_COMPANY_COSTS}
+            element={
+              <RoleProtectedRoute allowedRoles={['ADMIN']}>
+                <CompanyCosts />
               </RoleProtectedRoute>
             }
           />

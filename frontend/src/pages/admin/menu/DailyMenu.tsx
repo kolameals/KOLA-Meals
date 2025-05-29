@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import type { DailyMenu as DailyMenuType, MenuItem, CreateMenuItemDto, UpdateMenuItemDto } from '../../../types/menu.types';
-import { menuService } from '../../../services/menu.service';
+import type { DailyMenu as DailyMenuType, MenuItem, CreateMenuItemDto, UpdateMenuItemDto, MealType } from '../../../types/menu.types';
+import { menuService, MenuNotFoundError } from '../../../services/menu.service';
+import { format, parseISO } from 'date-fns';
 
 interface DailyMenuProps {
   dailyMenu: DailyMenuType | null;
@@ -10,26 +11,42 @@ interface DailyMenuProps {
 const DailyMenu: React.FC<DailyMenuProps> = ({ dailyMenu, onUpdate }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [formData, setFormData] = useState<CreateMenuItemDto | UpdateMenuItemDto>({
+  const [formData, setFormData] = useState<CreateMenuItemDto>({
     mealId: '',
     price: 0,
     isAvailable: true,
     dayOfWeek: new Date().getDay(),
-    mealType: 'LUNCH',
+    mealType: 'LUNCH' as MealType,
+    dailyMenuId: dailyMenu?.id || '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [menuNotFound, setMenuNotFound] = useState(false);
+  const [meals, setMeals] = useState<any[]>([]);
 
   useEffect(() => {
     const initializeDailyMenu = async () => {
       if (!dailyMenu) {
         try {
+          setLoading(true);
+          setError(null);
+          setMenuNotFound(false);
           const today = new Date();
-          const newDailyMenu = await menuService.createDailyMenu({
-            date: today.toISOString(),
-            items: [],
-          });
+          const newDailyMenu = await menuService.getDailyMenuByDate(today);
           onUpdate(newDailyMenu);
         } catch (error) {
-          console.error('Error creating daily menu:', error);
+          console.error('Caught error:', error);
+          if (error instanceof MenuNotFoundError) {
+            console.log('Menu not found error caught');
+            setMenuNotFound(true);
+            setError(null);
+          } else {
+            console.error('Other error caught:', error);
+            setError('Failed to fetch daily menu');
+            setMenuNotFound(false);
+          }
+        } finally {
+          setLoading(false);
         }
       }
     };
@@ -37,14 +54,65 @@ const DailyMenu: React.FC<DailyMenuProps> = ({ dailyMenu, onUpdate }) => {
     initializeDailyMenu();
   }, [dailyMenu, onUpdate]);
 
+  useEffect(() => {
+    const fetchMeals = async () => {
+      try {
+        const mealsData = await menuService.getMeals();
+        setMeals(mealsData);
+      } catch (error) {
+        console.error('Error fetching meals:', error);
+      }
+    };
+    fetchMeals();
+  }, []);
+
+  const handleCreateMenu = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const today = new Date();
+      const newDailyMenu = await menuService.createDailyMenu({
+        date: today.toISOString(),
+        items: [],
+      });
+      onUpdate(newDailyMenu);
+      setMenuNotFound(false);
+    } catch (error) {
+      console.error('Error creating daily menu:', error);
+      setError('Failed to create daily menu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    setError(null);
+    setMenuNotFound(false);
+    const today = new Date();
+    menuService.getDailyMenuByDate(today)
+      .then(menu => {
+        onUpdate(menu);
+      })
+      .catch(error => {
+        console.error('Retry error:', error);
+        if (error instanceof MenuNotFoundError) {
+          setMenuNotFound(true);
+        } else {
+          setError('Failed to fetch daily menu');
+        }
+      });
+  };
+
   const handleOpenDialog = (item?: MenuItem) => {
     if (item) {
       setSelectedItem(item);
       setFormData({
+        mealId: item.mealId,
         price: item.price,
         isAvailable: item.isAvailable,
         dayOfWeek: item.dayOfWeek,
         mealType: item.mealType,
+        dailyMenuId: item.dailyMenuId,
       });
     } else {
       setSelectedItem(null);
@@ -53,7 +121,8 @@ const DailyMenu: React.FC<DailyMenuProps> = ({ dailyMenu, onUpdate }) => {
         price: 0,
         isAvailable: true,
         dayOfWeek: new Date().getDay(),
-        mealType: 'LUNCH',
+        mealType: 'LUNCH' as MealType,
+        dailyMenuId: dailyMenu?.id || '',
       });
     }
     setIsDialogOpen(true);
@@ -89,6 +158,7 @@ const DailyMenu: React.FC<DailyMenuProps> = ({ dailyMenu, onUpdate }) => {
       handleCloseDialog();
     } catch (error) {
       console.error('Error saving menu item:', error);
+      setError('Failed to save menu item');
     }
   };
 
@@ -104,17 +174,69 @@ const DailyMenu: React.FC<DailyMenuProps> = ({ dailyMenu, onUpdate }) => {
       }
     } catch (error) {
       console.error('Error deleting menu item:', error);
+      setError('Failed to delete menu item');
     }
   };
 
-  if (!dailyMenu) {
+  if (loading) {
     return (
       <div className="container mx-auto p-4">
         <div className="flex justify-center items-center h-64">
-          <p className="text-gray-600">Loading daily menu...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       </div>
     );
+  }
+
+  if (menuNotFound) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex flex-col items-center justify-center h-64 space-y-4">
+          <h2 className="text-2xl font-bold text-gray-800">No Menu Found</h2>
+          <p className="text-gray-600">There is no menu created for today.</p>
+          <button
+            onClick={handleCreateMenu}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2"
+          >
+            <span>+</span>
+            <span>Create Today's Menu</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex flex-col items-center justify-center h-64 space-y-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong className="font-bold">Error!</strong>
+            <span className="block sm:inline"> {error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            >
+              <span className="sr-only">Dismiss</span>
+              <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <title>Close</title>
+                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+              </svg>
+            </button>
+          </div>
+          <button
+            onClick={handleRetry}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dailyMenu) {
+    return null;
   }
 
   return (
@@ -123,12 +245,7 @@ const DailyMenu: React.FC<DailyMenuProps> = ({ dailyMenu, onUpdate }) => {
         <div>
           <h1 className="text-2xl font-bold">Daily Menu</h1>
           <p className="text-gray-600">
-            {new Date(dailyMenu.date).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
+            {format(parseISO(dailyMenu.date), 'EEEE, MMMM d, yyyy')}
           </p>
         </div>
         <button
@@ -156,7 +273,7 @@ const DailyMenu: React.FC<DailyMenuProps> = ({ dailyMenu, onUpdate }) => {
             <div key={item.id} className="bg-white rounded-lg shadow-md p-4">
               <div className="mb-4">
                 <h3 className="text-lg font-semibold">{item.meal.name}</h3>
-                <p className="text-gray-600">${item.price}</p>
+                <p className="text-gray-600">₹{item.price}</p>
                 <p className="text-gray-600">Type: {item.mealType}</p>
                 <p className="text-gray-600">Available: {item.isAvailable ? 'Yes' : 'No'}</p>
               </div>
@@ -187,19 +304,37 @@ const DailyMenu: React.FC<DailyMenuProps> = ({ dailyMenu, onUpdate }) => {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-gray-700 mb-2">Price</label>
+                <label className="block text-gray-700 mb-2">Meal</label>
+                <select
+                  value={formData.mealId}
+                  onChange={(e) => setFormData({ ...formData, mealId: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!!selectedItem}
+                >
+                  <option value="">Select a meal</option>
+                  {meals.map((meal) => (
+                    <option key={meal.id} value={meal.id}>
+                      {meal.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-2">Price (₹)</label>
                 <input
                   type="number"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  step="0.01"
                 />
               </div>
               <div>
                 <label className="block text-gray-700 mb-2">Meal Type</label>
                 <select
                   value={formData.mealType}
-                  onChange={(e) => setFormData({ ...formData, mealType: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, mealType: e.target.value as MealType })}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="BREAKFAST">Breakfast</option>

@@ -1,17 +1,22 @@
 import { z } from 'zod';
-import { MealType } from './meal.types';
+
+export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER';
 
 // Base Types
 export interface MenuItem {
   id: string;
-  name: string;
-  description: string;
+  mealId: string;
+  meal: {
+    id: string;
+    name: string;
+    description?: string;
+    type: MealType;
+  };
   price: number;
-  category: string;
-  imageUrl?: string;
   isAvailable: boolean;
-  createdAt: string;
-  updatedAt: string;
+  mealType: MealType;
+  dayOfWeek: number;
+  dailyMenuId: string;
 }
 
 export interface Menu {
@@ -28,10 +33,8 @@ export interface Menu {
 
 export interface DailyMenu {
   id: string;
-  date: Date;
+  date: string; // Store as ISO string
   items: MenuItem[];
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface MenuCalendar {
@@ -46,20 +49,23 @@ export interface MenuCalendar {
 // DTOs
 export interface CreateMenuItemDto {
   mealId: string;
-  dailyMenuId: string;
-  mealType: MealType;
   price: number;
+  isAvailable: boolean;
+  mealType: MealType;
+  dayOfWeek: number;
+  dailyMenuId: string;
 }
 
 export interface UpdateMenuItemDto {
-  mealId?: string;
-  mealType?: MealType;
   price?: number;
+  isAvailable?: boolean;
+  mealType?: MealType;
+  dayOfWeek?: number;
 }
 
 export interface CreateDailyMenuDto {
-  date: Date;
-  items?: CreateMenuItemDto[];
+  date: string; // Store as ISO string
+  items: MenuItem[];
 }
 
 export interface UpdateDailyMenuDto {

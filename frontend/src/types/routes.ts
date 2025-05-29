@@ -33,6 +33,9 @@ export const ROUTES = {
   ADMIN_MENU_CALENDAR: '/admin/menu/calendar',
   ADMIN_MEALS: '/admin/meals',
   
+  // Company Costs
+  ADMIN_COMPANY_COSTS: '/admin/company-costs',
+  
   // Analytics & Reports
   ADMIN_SALES_ANALYTICS: '/admin/analytics/sales',
   ADMIN_KITCHEN_ANALYTICS: '/admin/analytics/kitchen',

@@ -75,3 +75,21 @@
 {"error":{"clientVersion":"5.22.0","code":"P1001","meta":{"database_host":"aws-0-ap-south-1.pooler.supabase.com","database_port":5432,"modelName":"User"},"name":"PrismaClientKnownRequestError"},"level":"error","message":"Token refresh error:","timestamp":"2025-05-24T07:01:24.126Z"}
 {"email":"shrayank@kolameals.com","error":{"clientVersion":"5.22.0","name":"PrismaClientInitializationError"},"level":"error","message":"Login error:","timestamp":"2025-05-24T07:27:25.392Z"}
 {"error":{"clientVersion":"5.22.0","code":"P1001","meta":{"database_host":"aws-0-ap-south-1.pooler.supabase.com","database_port":5432,"modelName":"User"},"name":"PrismaClientKnownRequestError"},"level":"error","message":"Token refresh error:","timestamp":"2025-05-24T13:29:28.570Z"}
+{"error":{"clientVersion":"5.22.0","code":"P1001","meta":{"database_host":"aws-0-ap-south-1.pooler.supabase.com","database_port":5432,"modelName":"User"},"name":"PrismaClientKnownRequestError"},"level":"error","message":"Token refresh error:","timestamp":"2025-05-25T01:35:06.080Z"}
+{"error":{"isOperational":true,"statusCode":401},"level":"error","message":"Token refresh error:","timestamp":"2025-05-27T08:38:20.660Z"}
+{"error":{"isOperational":true,"statusCode":401},"level":"error","message":"Token refresh error:","timestamp":"2025-05-27T08:38:52.063Z"}
+{"email":"shrayank@kolameals.com","error":{"isOperational":true,"statusCode":401},"level":"error","message":"Login error:","timestamp":"2025-05-27T08:39:07.819Z"}
+{"email":"shrayank@kolameals.com","error":{"isOperational":true,"statusCode":401},"level":"error","message":"Login error:","timestamp":"2025-05-27T08:39:29.134Z"}
+{"email":"shrayank@kolameals.com","error":{"isOperational":true,"statusCode":401},"level":"error","message":"Login error:","timestamp":"2025-05-27T08:40:01.066Z"}
+{"email":"shrayank@kolameals.com","error":{"isOperational":true,"statusCode":401},"level":"error","message":"Login error:","timestamp":"2025-05-27T08:40:23.765Z"}
+{"error":{"isOperational":true,"statusCode":401},"level":"error","message":"Token refresh error:","timestamp":"2025-05-27T09:17:31.138Z"}
+{"email":"shrayank@kolameals.com","error":{"isOperational":true,"statusCode":401},"level":"error","message":"Login error:","timestamp":"2025-05-27T09:17:39.496Z"}
+{"email":"shrayank@kolameals.com","error":{"isOperational":true,"statusCode":401},"level":"error","message":"Login error:","timestamp":"2025-05-28T08:22:12.832Z"}
+{"error":{"isOperational":true,"statusCode":401},"level":"error","message":"Token refresh error:","timestamp":"2025-05-28T08:32:39.900Z"}
+{"error":{"isOperational":true,"statusCode":401},"level":"error","message":"Token refresh error:","timestamp":"2025-05-28T08:32:47.713Z"}
+{"error":{"isOperational":true,"statusCode":401},"level":"error","message":"Token refresh error:","timestamp":"2025-05-28T08:38:04.756Z"}
+{"error":{"clientVersion":"6.8.2","code":"P1001","meta":{"database_host":"aws-0-ap-south-1.pooler.supabase.com","database_port":5432,"modelName":"User"},"name":"PrismaClientKnownRequestError"},"level":"error","message":"Token refresh error:","timestamp":"2025-05-28T12:53:13.392Z"}
+{"email":"shrayank@kolameals.com","error":{"isOperational":true,"statusCode":401},"level":"error","message":"Login error:","timestamp":"2025-05-28T15:57:14.048Z"}
+{"error":{"isOperational":true,"statusCode":401},"level":"error","message":"Token refresh error:","timestamp":"2025-05-28T17:54:11.130Z"}
+{"error":{"clientVersion":"6.8.2","code":"P1001","meta":{"database_host":"aws-0-ap-south-1.pooler.supabase.com","database_port":5432,"modelName":"User"},"name":"PrismaClientKnownRequestError"},"level":"error","message":"Token refresh error:","timestamp":"2025-05-29T06:20:34.913Z"}
+{"error":{"isOperational":true,"statusCode":401},"level":"error","message":"Token refresh error:","timestamp":"2025-05-29T10:31:25.401Z"}

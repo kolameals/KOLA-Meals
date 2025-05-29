@@ -11,75 +11,82 @@ import { fetchRawMaterials } from '../../../store/slices/rawMaterialSlice';
 import { fetchMeals } from '../../../store/slices/mealSlice';
 import type { Recipe, RecipeItem } from '../../../services/recipe.service';
 import type { RawMaterial } from '../../../services/rawMaterial.service';
+import { MealType, MealCategory } from '../../../services/meal.service';
 import type { Meal } from '../../../services/meal.service';
+import { 
+  Card, 
+  Table, 
+  Button, 
+  Modal, 
+  Form, 
+  Input, 
+  InputNumber, 
+  Select, 
+  Upload, 
+  Space, 
+  Tag, 
+  Tooltip,
+  message,
+  Divider,
+  Typography
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UploadOutlined,
+  ClockCircleOutlined,
+  UserOutlined,
+  DollarOutlined,
+  InfoCircleOutlined
+} from '@ant-design/icons';
+import type { UploadFile } from 'antd/es/upload/interface';
+import { RcFile } from 'antd/es/upload';
+
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+const { Option } = Select;
 
 const Recipes = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { items: recipes, loading, error } = useSelector((state: RootState) => state.recipes);
-  const { items: rawMaterials } = useSelector((state: RootState) => state.rawMaterials);
-  const { meals } = useSelector((state: RootState) => state.meal);
+  const { items: recipes, loading: recipesLoading, error: recipesError } = useSelector((state: RootState) => state.recipes);
+  const { items: rawMaterials, loading: materialsLoading } = useSelector((state: RootState) => state.rawMaterials);
+  const { meals, loading: mealsLoading } = useSelector((state: RootState) => state.meal);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentRecipe, setCurrentRecipe] = useState<Recipe | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    instructions: '',
-    preparationTime: 0,
-    cookingTime: 0,
-    servings: 1,
-    mealId: '',
-    costPerServing: 0,
-    recipeItems: [] as Omit<RecipeItem, 'id'>[]
-  });
-  const [newRecipeItem, setNewRecipeItem] = useState({
-    rawMaterialId: '',
-    quantity: 0,
-    unit: ''
-  });
+  const [form] = Form.useForm();
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
+  const [previewTitle, setPreviewTitle] = useState('');
 
   useEffect(() => {
-    console.log('Fetching data...');
     dispatch(fetchRecipes());
     dispatch(fetchRawMaterials());
     dispatch(fetchMeals());
   }, [dispatch]);
 
-  useEffect(() => {
-    console.log('Raw Materials:', rawMaterials);
-    console.log('Meals:', meals);
-  }, [rawMaterials, meals]);
-
   const handleOpenModal = (recipe?: Recipe) => {
     if (recipe) {
       setCurrentRecipe(recipe);
-      setFormData({
+      form.setFieldsValue({
         name: recipe.name,
         description: recipe.description,
-        instructions: recipe.instructions,
-        preparationTime: recipe.preparationTime,
-        cookingTime: recipe.cookingTime,
-        servings: recipe.servings,
         mealId: recipe.mealId,
-        costPerServing: recipe.costPerServing,
-        recipeItems: recipe.recipeItems.map(item => ({
-          rawMaterialId: item.rawMaterialId,
-          quantity: item.quantity,
-          unit: item.unit
-        }))
+        category: recipe.category
       });
+      if (recipe.imageUrl) {
+        setFileList([{
+          uid: '-1',
+          name: 'recipe-image.png',
+          status: 'done',
+          url: recipe.imageUrl,
+        }]);
+      }
     } else {
       setCurrentRecipe(null);
-      setFormData({
-        name: '',
-        description: '',
-        instructions: '',
-        preparationTime: 0,
-        cookingTime: 0,
-        servings: 1,
-        mealId: '',
-        costPerServing: 0,
-        recipeItems: []
-      });
+      form.resetFields();
+      setFileList([]);
     }
     setIsModalOpen(true);
   };
@@ -87,288 +94,336 @@ const Recipes = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setCurrentRecipe(null);
+    form.resetFields();
+    setFileList([]);
   };
 
-  const handleAddRecipeItem = () => {
-    if (newRecipeItem.rawMaterialId && newRecipeItem.quantity > 0 && newRecipeItem.unit) {
-      setFormData({
-        ...formData,
-        recipeItems: [...formData.recipeItems, { ...newRecipeItem }]
-      });
-      setNewRecipeItem({
-        rawMaterialId: '',
-        quantity: 0,
-        unit: ''
-      });
+  const handlePreview = async (file: UploadFile) => {
+    if (!file.url && !file.preview) {
+      file.preview = await getBase64(file.originFileObj as RcFile);
     }
+    setPreviewImage(file.url || (file.preview as string));
+    setPreviewOpen(true);
+    setPreviewTitle(file.name || file.url!.substring(file.url!.lastIndexOf('/') + 1));
   };
 
-  const handleRemoveRecipeItem = (index: number) => {
-    setFormData({
-      ...formData,
-      recipeItems: formData.recipeItems.filter((_, i) => i !== index)
+  const getBase64 = (file: RcFile): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
     });
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (values: any) => {
     try {
+      const formData = {
+        ...values,
+        imageUrl: fileList[0]?.url || fileList[0]?.response?.url,
+        recipeItems: [], // Initialize empty recipe items array
+        preparationTime: 0, // Default values for required fields
+        cookingTime: 0,
+        servings: 1,
+        costPerServing: 0,
+        instructions: values.description // Use description as instructions
+      };
+      
       if (currentRecipe) {
         await dispatch(updateRecipe({ id: currentRecipe.id, data: formData }));
+        message.success('Recipe updated successfully');
       } else {
         await dispatch(addRecipe(formData));
+        message.success('Recipe added successfully');
       }
       handleCloseModal();
     } catch (error) {
+      message.error('Failed to save recipe');
       console.error('Failed to save recipe:', error);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this recipe?')) {
-      try {
-        await dispatch(deleteRecipe(id));
-      } catch (error) {
-        console.error('Failed to delete recipe:', error);
-      }
+    try {
+      await dispatch(deleteRecipe(id));
+      message.success('Recipe deleted successfully');
+    } catch (error) {
+      message.error('Failed to delete recipe');
+      console.error('Failed to delete recipe:', error);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  // Ensure meals is an array
+  const mealsList = Array.isArray(meals) ? meals : [];
+
+  const columns = [
+    {
+      title: 'Image',
+      dataIndex: 'imageUrl',
+      key: 'imageUrl',
+      width: 100,
+      render: (imageUrl: string) => (
+        <img 
+          src={imageUrl || '/placeholder-recipe.png'} 
+          alt="Recipe" 
+          className="w-16 h-16 object-cover rounded-lg"
+        />
+      ),
+    },
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string) => <span className="font-medium">{text}</span>,
+    },
+    {
+      title: 'Category',
+      dataIndex: 'category',
+      key: 'category',
+      render: (category: MealCategory) => (
+        <Tag color={getMealCategoryColor(category)} className="text-sm font-medium">
+          {category.replace('_', ' ')}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type: MealType) => (
+        <Tag color={getMealTypeColor(type)} className="text-sm font-medium">
+          {type}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      render: (text: string) => (
+        <div className="max-w-md">
+          <Text ellipsis={{ tooltip: text }}>{text}</Text>
+        </div>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (record: Recipe) => (
+        <Space>
+          <Tooltip title="Edit Recipe">
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => handleOpenModal(record)}
+              className="flex items-center"
+            >
+              Edit
+            </Button>
+          </Tooltip>
+          <Tooltip title="Delete Recipe">
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record.id)}
+              className="flex items-center"
+            >
+              Delete
+            </Button>
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
+  // Helper function to get color based on meal type
+  const getMealTypeColor = (type?: MealType) => {
+    switch (type) {
+      case MealType.BREAKFAST:
+        return 'blue';
+      case MealType.LUNCH:
+        return 'green';
+      case MealType.DINNER:
+        return 'purple';
+      default:
+        return 'default';
+    }
+  };
+
+  // Helper function to get color based on meal category
+  const getMealCategoryColor = (category?: MealCategory) => {
+    switch (category) {
+      case MealCategory.VEGETARIAN:
+        return 'green';
+      case MealCategory.NON_VEGETARIAN:
+        return 'red';
+      case MealCategory.DESSERT:
+        return 'pink';
+      case MealCategory.SNACKS:
+        return 'orange';
+      default:
+        return 'default';
+    }
+  };
+
+  if (recipesLoading || materialsLoading || mealsLoading) {
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
+  }
+
+  if (recipesError) {
+    return <div className="text-red-500 text-center">{recipesError}</div>;
+  }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Recipe Management</h1>
-        <button
+        <Title level={2}>Recipe Management</Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          size="large"
           onClick={() => handleOpenModal()}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Add Recipe
-        </button>
+        </Button>
       </div>
 
-      {/* Recipes Table */}
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="min-w-full">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prep Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cook Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Servings</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {recipes.map((recipe) => (
-              <tr key={recipe.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{recipe.name}</td>
-                <td className="px-6 py-4">{recipe.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{recipe.preparationTime} mins</td>
-                <td className="px-6 py-4 whitespace-nowrap">{recipe.cookingTime} mins</td>
-                <td className="px-6 py-4 whitespace-nowrap">{recipe.servings}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <button
-                    onClick={() => handleOpenModal(recipe)}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(recipe.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card className="shadow-lg">
+        <Table
+          columns={columns}
+          dataSource={recipes}
+          rowKey="id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} recipes`,
+            className: "px-4"
+          }}
+          className="recipe-table"
+          loading={recipesLoading}
+          scroll={{ x: 'max-content' }}
+        />
+      </Card>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">
-              {currentRecipe ? 'Edit Recipe' : 'Add Recipe'}
-            </h2>
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                    required
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Meal</label>
-                  <select
-                    value={formData.mealId}
-                    onChange={(e) => setFormData({ ...formData, mealId: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                    required
-                  >
-                    <option value="">Select a meal</option>
-                    {meals.map((meal) => (
-                      <option key={meal.id} value={meal.id}>
-                        {meal.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+      <Modal
+        title={currentRecipe ? 'Edit Recipe' : 'Add Recipe'}
+        open={isModalOpen}
+        onCancel={handleCloseModal}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={{
+            category: MealCategory.VEGETARIAN,
+            type: MealType.BREAKFAST
+          }}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item
+              name="name"
+              label="Recipe Name"
+              rules={[{ required: true, message: 'Please enter recipe name' }]}
+            >
+              <Input placeholder="Enter recipe name" />
+            </Form.Item>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Servings</label>
-                <input
-                  type="number"
-                  value={formData.servings}
-                  onChange={(e) => setFormData({ ...formData, servings: Number(e.target.value) })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  required
-                  min="1"
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  required
-                  rows={2}
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Instructions</label>
-                <textarea
-                  value={formData.instructions}
-                  onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                  required
-                  rows={4}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Preparation Time (mins)</label>
-                  <input
-                    type="number"
-                    value={formData.preparationTime}
-                    onChange={(e) => setFormData({ ...formData, preparationTime: Number(e.target.value) })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                    required
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Cooking Time (mins)</label>
-                  <input
-                    type="number"
-                    value={formData.cookingTime}
-                    onChange={(e) => setFormData({ ...formData, cookingTime: Number(e.target.value) })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-                    required
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="text-lg font-medium mb-2">Ingredients</h3>
-                <div className="grid grid-cols-3 gap-4 mb-2">
-                  <select
-                    value={newRecipeItem.rawMaterialId}
-                    onChange={(e) => setNewRecipeItem({ ...newRecipeItem, rawMaterialId: e.target.value })}
-                    className="border p-2 rounded"
-                  >
-                    <option value="">Select Material</option>
-                    {rawMaterials.map((material) => (
-                      <option key={material.id} value={material.id}>
-                        {material.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    value={newRecipeItem.quantity}
-                    onChange={(e) => setNewRecipeItem({ ...newRecipeItem, quantity: Number(e.target.value) })}
-                    placeholder="Quantity"
-                    className="border p-2 rounded"
-                    min="0"
-                    step="0.01"
-                  />
-                  <input
-                    type="text"
-                    value={newRecipeItem.unit}
-                    onChange={(e) => setNewRecipeItem({ ...newRecipeItem, unit: e.target.value })}
-                    placeholder="Unit"
-                    className="border p-2 rounded"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddRecipeItem}
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                >
-                  Add Ingredient
-                </button>
-
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2">Added Ingredients:</h4>
-                  <ul className="space-y-2">
-                    {formData.recipeItems.map((item, index) => {
-                      const material = rawMaterials.find(m => m.id === item.rawMaterialId);
-                      return (
-                        <li key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                          <span>
-                            {material?.name} - {item.quantity} {item.unit}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveRecipeItem(index)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  {currentRecipe ? 'Update' : 'Add'}
-                </button>
-              </div>
-            </form>
+            <Form.Item
+              name="category"
+              label="Category"
+              rules={[{ required: true, message: 'Please select a category' }]}
+            >
+              <Select placeholder="Select category">
+                {Object.values(MealCategory).map((category) => (
+                  <Option key={category} value={category}>
+                    {category.replace('_', ' ')}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
           </div>
-        </div>
-      )}
+
+          <Form.Item
+            name="type"
+            label="Meal Type"
+            rules={[{ required: true, message: 'Please select a meal type' }]}
+          >
+            <Select placeholder="Select meal type">
+              {Object.values(MealType).map((type) => (
+                <Option key={type} value={type}>
+                  {type}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="description"
+            label="Recipe Details"
+            rules={[{ required: true, message: 'Please enter recipe details' }]}
+            extra="Include ingredients, preparation time, cooking time, servings, and cooking instructions in the description."
+          >
+            <TextArea 
+              rows={8} 
+              placeholder="Enter recipe details including:
+- Number of servings
+- Preparation time
+- Cooking time
+- Ingredients list
+- Step-by-step cooking instructions" 
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="imageUrl"
+            label="Recipe Image"
+          >
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              onPreview={handlePreview}
+              onChange={({ fileList }) => setFileList(fileList)}
+              beforeUpload={(file) => {
+                const isImage = file.type.startsWith('image/');
+                if (!isImage) {
+                  message.error('You can only upload image files!');
+                }
+                const isLt2M = file.size / 1024 / 1024 < 2;
+                if (!isLt2M) {
+                  message.error('Image must be smaller than 2MB!');
+                }
+                return isImage && isLt2M;
+              }}
+            >
+              {fileList.length >= 1 ? null : (
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Upload</div>
+                </div>
+              )}
+            </Upload>
+          </Form.Item>
+
+          <div className="flex justify-end gap-4 mt-6">
+            <Button onClick={handleCloseModal}>
+              Cancel
+            </Button>
+            <Button type="primary" htmlType="submit">
+              {currentRecipe ? 'Update Recipe' : 'Add Recipe'}
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+
+      <Modal
+        open={previewOpen}
+        title={previewTitle}
+        footer={null}
+        onCancel={() => setPreviewOpen(false)}
+      >
+        <img alt="recipe preview" style={{ width: '100%' }} src={previewImage} />
+      </Modal>
     </div>
   );
 };

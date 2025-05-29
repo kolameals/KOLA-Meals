@@ -1,4 +1,5 @@
 import api from './api';
+import { MealCategory, MealType } from './meal.service';
 
 export interface RecipeItem {
   id: string;
@@ -8,6 +9,7 @@ export interface RecipeItem {
   rawMaterial?: {
     name: string;
     unit: string;
+    costPerUnit: number;
   };
 }
 
@@ -21,9 +23,12 @@ export interface Recipe {
   servings: number;
   costPerServing: number;
   mealId: string;
+  category: MealCategory;
+  type: MealType;
   createdAt: string;
   updatedAt: string;
   recipeItems: RecipeItem[];
+  imageUrl?: string;
 }
 
 export const recipeService = {

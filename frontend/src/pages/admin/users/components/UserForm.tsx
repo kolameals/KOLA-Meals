@@ -1,174 +1,169 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { Form, Input, Select, Button, Space } from 'antd';
 import type { User, CreateUserData, UpdateUserData } from '../../../../types/user.types';
-import { UserRole } from '../../../../types/user.types';
+
+const { Option } = Select;
 
 interface UserFormProps {
-  user?: User;
-  onSubmit: (data: CreateUserData | UpdateUserData) => void;
-  onClose: () => void;
+  initialValues?: User;
+  onSubmit: (values: CreateUserData | UpdateUserData) => void;
+  onCancel: () => void;
+  loading?: boolean;
 }
 
-const UserForm: React.FC<UserFormProps> = ({ user, onSubmit, onClose }) => {
-  const [formData, setFormData] = useState<CreateUserData | UpdateUserData>({
-    name: '',
-    email: '',
-    phoneNumber: '',
-    password: '',
-    role: UserRole.CUSTOMER
-  });
+const SUPPORTED_APARTMENTS = [
+  { id: 'sunrise', name: 'Sunrise Apartments' },
+  { id: 'oakwood', name: 'Oakwood Residences' },
+  { id: 'greenview', name: 'Greenview Heights' },
+  { id: 'riverside', name: 'Riverside Gardens' },
+];
 
-  // Update form data when user prop changes
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || '',
-        email: user.email || '',
-        phoneNumber: user.phoneNumber || '',
-        password: '',
-        role: user.role || UserRole.CUSTOMER
-      });
-    } else {
-      // Reset form for new user
-      setFormData({
-        name: '',
-        email: '',
-        phoneNumber: '',
-        password: '',
-        role: UserRole.CUSTOMER
-      });
-    }
-  }, [user]);
+const SUBSCRIPTION_PLANS = [
+  { id: 'two-meals', name: 'Two Meals Plan', price: 4000, mealsPerDay: 2 },
+  { id: 'three-meals', name: 'Three Meals Plan', price: 6000, mealsPerDay: 3 },
+];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!formData.name) {
-      alert('Name is required');
-      return;
-    }
+const UserForm: React.FC<UserFormProps> = ({
+  initialValues,
+  onSubmit,
+  onCancel,
+  loading = false,
+}) => {
+  const [form] = Form.useForm();
 
-    if (!user && !formData.password) {
-      alert('Password is required for new users');
-      return;
-    }
-
-    if (user) {
-      // For update, we don't need to send password if it's empty
-      const updateData: UpdateUserData = {
-        name: formData.name,
-        email: formData.email || '',
-        phoneNumber: formData.phoneNumber || '',
-        role: formData.role
-      };
-      if (formData.password) {
-        updateData.password = formData.password;
-      }
-      onSubmit(updateData);
-    } else {
-      // For create, we need all required fields
-      const createData: CreateUserData = {
-        name: formData.name,
-        email: formData.email || '',
-        phoneNumber: formData.phoneNumber || '',
-        password: formData.password,
-        role: formData.role
-      };
-      onSubmit(createData);
-    }
+  const handleSubmit = (values: any) => {
+    onSubmit({
+      ...values,
+      apartment: values.apartment ? {
+        name: SUPPORTED_APARTMENTS.find(apt => apt.id === values.apartment)?.name || '',
+        tower: values.tower,
+        floor: values.floor,
+        roomNumber: values.roomNumber,
+      } : undefined,
+      subscription: values.planId ? {
+        planId: values.planId,
+        status: 'active',
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      } : undefined,
+    });
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div className="mt-3">
-          <h3 className="text-lg font-medium text-gray-900">
-            {user ? 'Edit User' : 'Create New User'}
-          </h3>
-          <form onSubmit={handleSubmit} className="mt-4">
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Name *
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              />
-            </div>
-            {!user && (
-              <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required
-                />
-              </div>
-            )}
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Role
-              </label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    <Form
+      form={form}
+      layout="vertical"
+      initialValues={initialValues}
+      onFinish={handleSubmit}
+    >
+      <Form.Item
+        name="name"
+        label="Name"
+        rules={[{ required: true, message: 'Please enter name' }]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        name="email"
+        label="Email"
+        rules={[
+          { type: 'email', message: 'Please enter a valid email' },
+          { required: true, message: 'Please enter email' },
+        ]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        name="phoneNumber"
+        label="Phone Number"
+        rules={[{ required: true, message: 'Please enter phone number' }]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        name="role"
+        label="Role"
+        rules={[{ required: true, message: 'Please select role' }]}
+      >
+        <Select>
+          <Option value="USER">User</Option>
+          <Option value="ADMIN">Admin</Option>
+          <Option value="DELIVERY_PARTNER">Delivery Partner</Option>
+        </Select>
+      </Form.Item>
+
+      <Form.Item
+        name="apartment"
+        label="Apartment"
+      >
+        <Select placeholder="Select apartment">
+          {SUPPORTED_APARTMENTS.map(apt => (
+            <Option key={apt.id} value={apt.id}>{apt.name}</Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+      <Form.Item
+        noStyle
+        shouldUpdate={(prevValues, currentValues) => prevValues.apartment !== currentValues.apartment}
+      >
+        {({ getFieldValue }) => {
+          const hasApartment = getFieldValue('apartment');
+          return hasApartment ? (
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Form.Item
+                name="tower"
+                label="Tower"
+                rules={[{ required: true, message: 'Please enter tower' }]}
               >
-                {Object.values(UserRole).map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                <Input />
+              </Form.Item>
+
+              <Form.Item
+                name="floor"
+                label="Floor"
+                rules={[{ required: true, message: 'Please enter floor' }]}
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                <Input />
+              </Form.Item>
+
+              <Form.Item
+                name="roomNumber"
+                label="Room Number"
+                rules={[{ required: true, message: 'Please enter room number' }]}
               >
-                {user ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+                <Input />
+              </Form.Item>
+            </Space>
+          ) : null;
+        }}
+      </Form.Item>
+
+      <Form.Item
+        name="planId"
+        label="Subscription Plan"
+      >
+        <Select placeholder="Select subscription plan">
+          {SUBSCRIPTION_PLANS.map(plan => (
+            <Option key={plan.id} value={plan.id}>
+              {plan.name} (₹{plan.price}/month, {plan.mealsPerDay} meals/day)
+            </Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+      <Form.Item>
+        <Space>
+          <Button type="primary" htmlType="submit" loading={loading}>
+            {initialValues ? 'Update' : 'Create'}
+          </Button>
+          <Button onClick={onCancel}>Cancel</Button>
+        </Space>
+      </Form.Item>
+    </Form>
   );
 };
 

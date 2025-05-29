@@ -1,5 +1,52 @@
 import api from './api';
-import type { Meal, CreateMealDto, UpdateMealDto } from '../types/meal.types';
+
+export enum MealType {
+  BREAKFAST = 'BREAKFAST',
+  LUNCH = 'LUNCH',
+  DINNER = 'DINNER'
+}
+
+export enum MealCategory {
+  VEGETARIAN = 'VEGETARIAN',
+  NON_VEGETARIAN = 'NON_VEGETARIAN',
+  DESSERT = 'DESSERT',
+  SNACKS = 'SNACKS'
+}
+
+export interface Meal {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  category: MealCategory;
+  type: MealType;
+  price: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MealResponse {
+  success: boolean;
+  data: Meal[];
+}
+
+export interface CreateMealDto {
+  name: string;
+  description: string;
+  image?: string;
+  category: MealCategory;
+  type: MealType;
+  price: number;
+}
+
+export interface UpdateMealDto {
+  name?: string;
+  description?: string;
+  image?: string;
+  category?: MealCategory;
+  type?: MealType;
+  price?: number;
+}
 
 export const mealService = {
   async getMeals(): Promise<{ success: boolean; data: Meal[] }> {
@@ -51,7 +98,7 @@ export const mealService = {
     }
   },
 
-  async getMealsByType(type: string): Promise<Meal[]> {
+  async getMealsByType(type: MealType): Promise<Meal[]> {
     try {
       const response = await api.get('/meals', {
         params: { type },
@@ -62,4 +109,16 @@ export const mealService = {
       throw error;
     }
   },
+
+  async getMealsByCategory(category: MealCategory): Promise<Meal[]> {
+    try {
+      const response = await api.get('/meals', {
+        params: { category },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching meals by category:', error);
+      throw error;
+    }
+  }
 }; 

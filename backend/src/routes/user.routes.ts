@@ -479,22 +479,50 @@ router.delete('/:userId', authMiddleware(['ADMIN']), async (req: Request, res: R
  */
 router.get('/admin/delivery-partners', authMiddleware(['ADMIN']), async (req: Request, res: Response) => {
   try {
-    const deliveryPartners = await prisma.user.findMany({
-      where: {
-        role: 'DELIVERY_PARTNER'
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phoneNumber: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [deliveryPartners, total] = await Promise.all([
+      prisma.user.findMany({
+        where: {
+          role: 'DELIVERY_PARTNER'
+        },
+        include: {
+          deliveryAgent: {
+            include: {
+              apartment: {
+                include: {
+                  towers: true
+                }
+              }
+            }
+          }
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }),
+      prisma.user.count({
+        where: {
+          role: 'DELIVERY_PARTNER'
+        }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: deliveryPartners,
+      meta: {
+        page,
+        limit,
+        total
       }
     });
-    res.json({ success: true, data: deliveryPartners });
   } catch (error) {
+    console.error('Error fetching delivery partners:', error);
     res.status(500).json({ error: 'Error fetching delivery partners' });
   }
 });
@@ -509,13 +537,32 @@ router.post('/admin/delivery-partners', authMiddleware(['ADMIN']), validateReque
       name: { type: 'string' },
       email: { type: 'string', format: 'email' },
       phoneNumber: { type: 'string' },
-      password: { type: 'string', minLength: 6 }
+      password: { type: 'string', minLength: 6 },
+      apartmentId: { type: 'string' },
+      assignedTowers: { 
+        type: 'array',
+        items: { type: 'string' }
+      },
+      assignedRooms: {
+        type: 'array',
+        items: { type: 'string' }
+      },
+      mealCount: { type: 'number' }
     },
-    required: ['name', 'email', 'phoneNumber', 'password']
+    required: ['name', 'email', 'phoneNumber', 'password', 'apartmentId']
   }
 }), async (req: Request, res: Response) => {
   try {
-    const { name, email, phoneNumber, password } = req.body;
+    const { 
+      name, 
+      email, 
+      phoneNumber, 
+      password,
+      apartmentId,
+      assignedTowers,
+      assignedRooms,
+      mealCount
+    } = req.body;
 
     // Check if user with email or phone already exists
     const existingUser = await prisma.user.findFirst({
@@ -531,6 +578,15 @@ router.post('/admin/delivery-partners', authMiddleware(['ADMIN']), validateReque
       return res.status(400).json({ error: 'User with this email or phone number already exists' });
     }
 
+    // Check if apartment exists
+    const apartment = await prisma.apartment.findUnique({
+      where: { id: apartmentId }
+    });
+
+    if (!apartment) {
+      return res.status(400).json({ error: 'Apartment not found' });
+    }
+
     // Hash the password
     const hashedPassword = await bcryptjs.hash(password, 12);
 
@@ -540,21 +596,33 @@ router.post('/admin/delivery-partners', authMiddleware(['ADMIN']), validateReque
         email,
         phoneNumber,
         password: hashedPassword,
-        role: 'DELIVERY_PARTNER'
+        role: 'DELIVERY_PARTNER',
+        deliveryAgent: {
+          create: {
+            apartmentId,
+            assignedTowers: assignedTowers || [],
+            assignedRooms: assignedRooms || [],
+            mealCount: mealCount || 35,
+            isAvailable: true
+          }
+        }
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phoneNumber: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
+      include: {
+        deliveryAgent: {
+          include: {
+            apartment: {
+              include: {
+                towers: true
+              }
+            }
+          }
+        }
       }
     });
 
     res.status(201).json({ success: true, data: deliveryPartner });
   } catch (error) {
+    console.error('Error creating delivery partner:', error);
     res.status(500).json({ error: 'Error creating delivery partner' });
   }
 });
@@ -568,20 +636,41 @@ router.put('/admin/delivery-partners/:id', authMiddleware(['ADMIN']), validateRe
     properties: {
       name: { type: 'string' },
       email: { type: 'string', format: 'email' },
-      phoneNumber: { type: 'string' }
+      phoneNumber: { type: 'string' },
+      apartmentId: { type: 'string' },
+      assignedTowers: { 
+        type: 'array',
+        items: { type: 'string' }
+      },
+      assignedRooms: {
+        type: 'array',
+        items: { type: 'string' }
+      },
+      mealCount: { type: 'number' }
     },
     required: []
   }
 }), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, email, phoneNumber } = req.body;
+    const { 
+      name, 
+      email, 
+      phoneNumber,
+      apartmentId,
+      assignedTowers,
+      assignedRooms,
+      mealCount
+    } = req.body;
 
     // Check if user exists and is a delivery partner
     const existingUser = await prisma.user.findFirst({
       where: {
         id,
         role: 'DELIVERY_PARTNER'
+      },
+      include: {
+        deliveryAgent: true
       }
     });
 
@@ -608,56 +697,175 @@ router.put('/admin/delivery-partners/:id', authMiddleware(['ADMIN']), validateRe
       }
     }
 
+    // Check if apartment exists if being changed
+    if (apartmentId) {
+      const apartment = await prisma.apartment.findUnique({
+        where: { id: apartmentId }
+      });
+
+      if (!apartment) {
+        return res.status(400).json({ error: 'Apartment not found' });
+      }
+    }
+
     const updatedPartner = await prisma.user.update({
       where: { id },
       data: {
         name,
         email,
-        phoneNumber
+        phoneNumber,
+        deliveryAgent: {
+          update: {
+            apartmentId,
+            assignedTowers,
+            assignedRooms,
+            mealCount
+          }
+        }
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phoneNumber: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
+      include: {
+        deliveryAgent: {
+          include: {
+            apartment: {
+              include: {
+                towers: true
+              }
+            }
+          }
+        }
       }
     });
 
     res.json({ success: true, data: updatedPartner });
   } catch (error) {
+    console.error('Error updating delivery partner:', error);
     res.status(500).json({ error: 'Error updating delivery partner' });
   }
 });
 
 /**
- * Admin: Delete a delivery partner
+ * Admin: Update delivery agent status
  */
-router.delete('/admin/delivery-partners/:id', authMiddleware(['ADMIN']), async (req: Request, res: Response) => {
+router.patch('/admin/delivery-partners/:id/status', authMiddleware(['ADMIN']), validateRequest({
+  body: {
+    type: 'object',
+    properties: {
+      isAvailable: { type: 'boolean' }
+    },
+    required: ['isAvailable']
+  }
+}), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const { isAvailable } = req.body;
 
-    // Check if user exists and is a delivery partner
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        id,
-        role: 'DELIVERY_PARTNER'
+    const updatedPartner = await prisma.user.update({
+      where: { id },
+      data: {
+        deliveryAgent: {
+          update: {
+            isAvailable
+          }
+        }
+      },
+      include: {
+        deliveryAgent: {
+          include: {
+            apartment: {
+              include: {
+                towers: true
+              }
+            }
+          }
+        }
       }
     });
 
-    if (!existingUser) {
-      return res.status(404).json({ error: 'Delivery partner not found' });
-    }
+    res.json({ success: true, data: updatedPartner });
+  } catch (error) {
+    console.error('Error updating delivery agent status:', error);
+    res.status(500).json({ error: 'Error updating delivery agent status' });
+  }
+});
 
-    await prisma.user.delete({
-      where: { id }
+/**
+ * Admin: Update delivery agent assignments
+ */
+router.patch('/admin/delivery-partners/:id/assignments', authMiddleware(['ADMIN']), validateRequest({
+  body: {
+    type: 'object',
+    properties: {
+      assignedTowers: { 
+        type: 'array',
+        items: { type: 'string' }
+      },
+      assignedRooms: {
+        type: 'array',
+        items: { type: 'string' }
+      },
+      mealCount: { type: 'number' }
+    },
+    required: ['assignedTowers', 'assignedRooms', 'mealCount']
+  }
+}), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { assignedTowers, assignedRooms, mealCount } = req.body;
+
+    const updatedPartner = await prisma.user.update({
+      where: { id },
+      data: {
+        deliveryAgent: {
+          update: {
+            assignedTowers,
+            assignedRooms,
+            mealCount
+          }
+        }
+      },
+      include: {
+        deliveryAgent: {
+          include: {
+            apartment: {
+              include: {
+                towers: true
+              }
+            }
+          }
+        }
+      }
     });
 
-    res.json({ success: true, message: 'Delivery partner deleted successfully' });
+    res.json({ success: true, data: updatedPartner });
   } catch (error) {
-    res.status(500).json({ error: 'Error deleting delivery partner' });
+    console.error('Error updating assignments:', error);
+    res.status(500).json({ error: 'Error updating assignments' });
+  }
+});
+
+/**
+ * Admin: List all apartments
+ */
+router.get('/apartments', authMiddleware(['ADMIN']), async (req: Request, res: Response) => {
+  try {
+    const apartments = await prisma.apartment.findMany({
+      include: {
+        towers: true
+      }
+    });
+
+    res.json({
+      success: true,
+      data: apartments,
+      meta: {
+        page: 1,
+        limit: apartments.length,
+        total: apartments.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching apartments:', error);
+    res.status(500).json({ error: 'Error fetching apartments' });
   }
 });
 

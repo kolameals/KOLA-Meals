@@ -1,125 +1,125 @@
 import React from 'react';
+import { Table, Badge, Button, Tooltip } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import type { User } from '../../../../types/user.types';
+import { formatDate } from '../../../../utils/date';
+
+interface Address {
+  id: string;
+  apartment: string;
+  tower: string;
+  floor: string;
+  roomNumber: string;
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+}
 
 interface UserListProps {
   users: User[];
+  loading: boolean;
   onEdit: (user: User) => void;
   onDelete: (userId: string) => void;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
 }
 
-const UserList: React.FC<UserListProps> = ({
-  users,
-  onEdit,
-  onDelete,
-  currentPage,
-  totalPages,
-  onPageChange
-}) => {
-  return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Email
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Phone
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Role
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {user.name}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {user.email}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {user.phoneNumber}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {user.role}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <button
-                  onClick={() => onEdit(user)}
-                  className="text-blue-600 hover:text-blue-900 mr-4"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDelete(user.id)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+const UserList: React.FC<UserListProps> = ({ users, loading, onEdit, onDelete }) => {
+  const columns: ColumnsType<User> = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text, record) => (
+        <div>
+          <div>{text}</div>
+          <div className="text-gray-500 text-sm">{record.email || record.phoneNumber}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Apartment Details',
+      dataIndex: 'addresses',
+      key: 'addresses',
+      render: (addresses: Address[] | undefined) => {
+        const defaultAddress = addresses?.find((addr: Address) => addr.isDefault);
+        return defaultAddress ? (
+          <div>
+            <div className="font-medium">{defaultAddress.apartment}</div>
+            <div className="text-sm">
+              Tower {defaultAddress.tower}, Floor {defaultAddress.floor}, Room {defaultAddress.roomNumber}
+            </div>
+          </div>
+        ) : '-';
+      },
+    },
+    {
+      title: 'Subscription',
+      dataIndex: 'subscription',
+      key: 'subscription',
+      render: (subscription) => subscription ? (
+        <div>
+          <div className="flex items-center gap-2">
+            <Badge 
+              status={
+                subscription.status === 'ACTIVE' ? 'success' : 
+                subscription.status === 'CANCELLED' ? 'error' : 
+                subscription.status === 'PAUSED' ? 'warning' : 'default'
+              } 
+              text={subscription.plan?.name || 'Unknown Plan'}
+            />
+          </div>
+          <div className="text-sm text-gray-500">
+            {subscription.plan?.mealsPerDay} meals/day • ₹{subscription.plan?.price}/month
+          </div>
+          <div className="text-xs text-gray-400">
+            {formatDate(subscription.startDate)} - {formatDate(subscription.endDate)}
+          </div>
+        </div>
+      ) : (
+        <Badge status="default" text="No Subscription" />
+      ),
+    },
+    {
+      title: 'Role',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role) => (
+        <Badge 
+          status={role === 'ADMIN' ? 'error' : role === 'DELIVERY_PARTNER' ? 'warning' : 'processing'} 
+          text={role.replace('_', ' ')}
+        />
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <div className="flex gap-2">
+          <Tooltip title="Edit User">
+            <Button type="link" onClick={() => onEdit(record)}>
+              Edit
+            </Button>
+          </Tooltip>
+          <Tooltip title="Delete User">
+            <Button type="link" danger onClick={() => onDelete(record.id)}>
+              Delete
+            </Button>
+          </Tooltip>
+        </div>
+      ),
+    },
+  ];
 
-      {/* Pagination */}
-      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-        <div className="flex-1 flex justify-between sm:hidden">
-          <button
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          >
-            Next
-          </button>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-700">
-              Showing page <span className="font-medium">{currentPage}</span> of{' '}
-              <span className="font-medium">{totalPages}</span>
-            </p>
-          </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-              <button
-                onClick={() => onPageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => onPageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                Next
-              </button>
-            </nav>
-          </div>
-        </div>
-      </div>
-    </div>
+  return (
+    <Table
+      columns={columns}
+      dataSource={users}
+      loading={loading}
+      rowKey="id"
+      pagination={false}
+    />
   );
 };
 

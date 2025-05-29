@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware';
 import prisma from '../lib/prisma';
+import { MealType } from '@prisma/client';
+import { MealCategory } from '../types/meal.types';
 
 const router = Router();
 
@@ -35,7 +37,8 @@ router.get('/', authMiddleware(['ADMIN']), async (req: Request, res: Response) =
           include: {
             rawMaterial: true
           }
-        }
+        },
+        meal: true
       },
       orderBy: { name: 'asc' }
     });
@@ -56,7 +59,8 @@ router.get('/:id', authMiddleware(['ADMIN']), async (req: Request, res: Response
           include: {
             rawMaterial: true
           }
-        }
+        },
+        meal: true
       }
     });
     if (!recipe) {
@@ -74,6 +78,14 @@ router.post('/', authMiddleware(['ADMIN']), async (req: Request, res: Response) 
   try {
     const { recipeItems, ...recipeData } = req.body;
     
+    // Validate category and type
+    if (!Object.values(MealCategory).includes(recipeData.category)) {
+      return res.status(400).json({ success: false, error: 'Invalid category' });
+    }
+    if (!Object.values(MealType).includes(recipeData.type)) {
+      return res.status(400).json({ success: false, error: 'Invalid meal type' });
+    }
+
     // Calculate total cost
     let totalCost = 0;
     for (const item of recipeItems) {
@@ -87,11 +99,25 @@ router.post('/', authMiddleware(['ADMIN']), async (req: Request, res: Response) 
 
     // Calculate cost per serving
     const costPerServing = totalCost / recipeData.servings;
+
+    // First create the meal
+    const meal = await prisma.meal.create({
+      data: {
+        name: recipeData.name,
+        description: recipeData.description,
+        category: recipeData.category as MealCategory,
+        type: recipeData.type as MealType,
+        price: 0, // Default price, can be updated later
+        image: recipeData.imageUrl
+      }
+    });
     
+    // Then create the recipe with the meal connection
     const recipe = await prisma.recipe.create({
       data: {
         ...recipeData,
         costPerServing,
+        mealId: meal.id,
         recipeItems: {
           create: recipeItems
         }
@@ -101,7 +127,8 @@ router.post('/', authMiddleware(['ADMIN']), async (req: Request, res: Response) 
           include: {
             rawMaterial: true
           }
-        }
+        },
+        meal: true
       }
     });
     res.status(201).json({ success: true, data: recipe });
@@ -115,6 +142,36 @@ router.post('/', authMiddleware(['ADMIN']), async (req: Request, res: Response) 
 router.put('/:id', authMiddleware(['ADMIN']), async (req: Request, res: Response) => {
   try {
     const { recipeItems, ...recipeData } = req.body;
+
+    // Validate category and type
+    if (recipeData.category && !Object.values(MealCategory).includes(recipeData.category)) {
+      return res.status(400).json({ success: false, error: 'Invalid category' });
+    }
+    if (recipeData.type && !Object.values(MealType).includes(recipeData.type)) {
+      return res.status(400).json({ success: false, error: 'Invalid meal type' });
+    }
+
+    // Get the existing recipe to find the meal ID
+    const existingRecipe = await prisma.recipe.findUnique({
+      where: { id: req.params.id },
+      include: { meal: true }
+    });
+
+    if (!existingRecipe) {
+      return res.status(404).json({ success: false, error: 'Recipe not found' });
+    }
+    
+    // Update the associated meal
+    await prisma.meal.update({
+      where: { id: existingRecipe.mealId },
+      data: {
+        name: recipeData.name,
+        description: recipeData.description,
+        category: recipeData.category as MealCategory,
+        type: recipeData.type as MealType,
+        image: recipeData.imageUrl
+      }
+    });
     
     // Delete existing recipe items
     await prisma.recipeItem.deleteMany({
@@ -135,7 +192,8 @@ router.put('/:id', authMiddleware(['ADMIN']), async (req: Request, res: Response
           include: {
             rawMaterial: true
           }
-        }
+        },
+        meal: true
       }
     });
     res.json({ success: true, data: recipe });

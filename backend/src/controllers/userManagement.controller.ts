@@ -6,11 +6,21 @@ export const getUsers = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const users = await userManagementService.getUsers(page, limit);
-    res.json({ data: users });
+    const search = req.query.search as string;
+    
+    // Debug: Log request parameters
+    console.log('Request parameters:', { page, limit, search });
+    
+    const result = await userManagementService.getUsers(page, limit, search);
+    
+    // Debug: Log the raw data from service
+    console.log('Raw data from service:', JSON.stringify(result.data[0], null, 2));
+    
+    // Send the raw data without any transformation
+    res.json(result);
   } catch (error) {
-    console.error('Error in getUsers:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    console.error('Error in getUsers controller:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 
@@ -78,5 +88,35 @@ export const createDeliveryPartner = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in createDeliveryPartner:', error);
     res.status(500).json({ error: 'Failed to create delivery partner' });
+  }
+};
+
+export const getUsersByApartment = async (req: Request, res: Response) => {
+  try {
+    const result = await userManagementService.getUsersByApartment();
+    res.json(result);
+  } catch (error) {
+    console.error('Error in getUsersByApartment controller:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+export const getNonSubscribedUsers = async (req: Request, res: Response) => {
+  try {
+    const result = await userManagementService.getNonSubscribedUsers();
+    res.json(result);
+  } catch (error) {
+    console.error('Error in getNonSubscribedUsers controller:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+export const getActiveSubscribers = async (req: Request, res: Response) => {
+  try {
+    const result = await userManagementService.getActiveSubscribers();
+    res.json(result);
+  } catch (error) {
+    console.error('Error in getActiveSubscribers controller:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }; 

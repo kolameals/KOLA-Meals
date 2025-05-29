@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import authRoutes from './auth.routes';
-import userRoutes from './user.routes';
 import mealRoutes from './meal.routes';
 import subscriptionRoutes from './subscription.routes';
 import deliveryRoutes from './delivery.routes';
@@ -12,11 +11,11 @@ import rawMaterialRoutes from './raw-material.routes';
 import recipeRoutes from './recipe.routes';
 import productionRoutes from './production.routes';
 import menuRoutes from './menu.routes';
+import towerRoutes from './tower.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
 router.use('/meals', mealRoutes);
 router.use('/subscriptions', subscriptionRoutes);
 router.use('/deliveries', deliveryRoutes);
@@ -28,5 +27,6 @@ router.use('/raw-materials', rawMaterialRoutes);
 router.use('/recipes', recipeRoutes);
 router.use('/production-schedules', productionRoutes);
 router.use('/menu', menuRoutes);
+router.use('/towers', towerRoutes);
 
 export default router; 

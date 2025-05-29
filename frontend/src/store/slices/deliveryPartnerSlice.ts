@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { deliveryPartnerService } from '../../services/deliveryPartner.service';
+import deliveryPartnerService from '../../services/deliveryPartner.service';
 import type { DeliveryPartner } from '../../services/deliveryPartner.service';
 
 interface DeliveryPartnerState {
@@ -17,13 +17,19 @@ const initialState: DeliveryPartnerState = {
 export const fetchDeliveryPartners = createAsyncThunk(
   'deliveryPartner/fetchPartners',
   async () => {
-    return await deliveryPartnerService.getDeliveryPartners();
+    const response = await deliveryPartnerService.getDeliveryPartners();
+    return response.data;
   }
 );
 
 export const addDeliveryPartner = createAsyncThunk(
   'deliveryPartner/addPartner',
-  async (data: Omit<DeliveryPartner, 'id' | 'createdAt' | 'updatedAt'> & { password: string }) => {
+  async (data: Omit<DeliveryPartner, 'id' | 'createdAt' | 'updatedAt'> & { 
+    password: string;
+    assignedTowers: string[];
+    assignedRooms: string[];
+    mealCount: number;
+  }) => {
     return await deliveryPartnerService.createDeliveryPartner(data);
   }
 );
