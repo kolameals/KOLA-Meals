@@ -176,14 +176,12 @@ export const deliveryAssignmentController = {
 
   async getTeamAssignments(req: Request, res: Response) {
     try {
-      const { teamId } = req.params;
+      const { apartmentId } = req.params;
       const currentDate = new Date();
 
       const assignments = await prisma.deliveryAssignment.findMany({
         where: {
-          deliveryAgent: {
-            teamId,
-          },
+          apartmentId,
           startDate: { lte: currentDate },
           endDate: { gte: currentDate },
         },

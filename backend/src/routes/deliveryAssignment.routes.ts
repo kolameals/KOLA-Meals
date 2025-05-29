@@ -1,43 +1,50 @@
 import { Router } from 'express';
 import { deliveryAssignmentController } from '../controllers/deliveryAssignment.controller';
-import { authenticateToken, authorizeRole } from '../middleware/auth';
+import { authMiddleware } from '../middleware/auth.middleware';
 import { Role } from '@prisma/client';
 
 const router = Router();
 
+// Get all assignments
 router.get(
   '/',
-  authenticateToken,
-  authorizeRole([Role.ADMIN]),
+  authMiddleware([Role.ADMIN, Role.DELIVERY_PARTNER]),
   deliveryAssignmentController.getAssignments
 );
 
-router.get(
-  '/current',
-  authenticateToken,
-  authorizeRole([Role.ADMIN]),
-  deliveryAssignmentController.getCurrentAssignments
-);
-
+// Create team assignment
 router.post(
-  '/',
-  authenticateToken,
-  authorizeRole([Role.ADMIN]),
-  deliveryAssignmentController.createAssignment
+  '/team',
+  authMiddleware([Role.ADMIN]),
+  deliveryAssignmentController.createTeamAssignment
 );
 
-router.patch(
+// Update assignment
+router.put(
   '/:id',
-  authenticateToken,
-  authorizeRole([Role.ADMIN]),
+  authMiddleware([Role.ADMIN]),
   deliveryAssignmentController.updateAssignment
 );
 
+// Delete assignment
 router.delete(
   '/:id',
-  authenticateToken,
-  authorizeRole([Role.ADMIN]),
+  authMiddleware([Role.ADMIN]),
   deliveryAssignmentController.deleteAssignment
+);
+
+// Get current assignments
+router.get(
+  '/current',
+  authMiddleware([Role.ADMIN, Role.DELIVERY_PARTNER]),
+  deliveryAssignmentController.getCurrentAssignments
+);
+
+// Get team assignments
+router.get(
+  '/apartment/:apartmentId',
+  authMiddleware([Role.ADMIN, Role.DELIVERY_PARTNER]),
+  deliveryAssignmentController.getTeamAssignments
 );
 
 export default router; 

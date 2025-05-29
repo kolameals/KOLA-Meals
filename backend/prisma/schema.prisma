@@ -400,6 +400,7 @@ model DeliveryAgent {
   assignedRooms   String[]
   apartment       Apartment @relation(fields: [apartmentId], references: [id])
   user            User      @relation(fields: [userId], references: [id])
+  assignments     DeliveryAssignment[]
 }
 
 model Apartment {
@@ -413,6 +414,7 @@ model Apartment {
   updatedAt      DateTime        @updatedAt
   deliveryAgents DeliveryAgent[]
   towers         Tower[]
+  assignments    DeliveryAssignment[]
 }
 
 model Tower {
@@ -650,4 +652,26 @@ enum CostFrequency {
   WEEKLY
   MONTHLY
   ONE_TIME
+}
+
+enum DeliveryAssignmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model DeliveryAssignment {
+  id              String                  @id @default(uuid())
+  deliveryAgentId String
+  apartmentId     String
+  startDate       DateTime
+  endDate         DateTime
+  status          DeliveryAssignmentStatus
+  towerNumbers    String[]
+  mealCount       Int                     @default(35)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  deliveryAgent   DeliveryAgent           @relation(fields: [deliveryAgentId], references: [id])
+  apartment       Apartment               @relation(fields: [apartmentId], references: [id])
 }
