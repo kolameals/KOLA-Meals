@@ -9877,3 +9877,4 @@
 {"ip":"::1","level":"info","message":"Incoming request","method":"GET","path":"/api/v1/costs/summary","query":{"endDate":"2025-05-31T18:29:59.999Z","startDate":"2025-04-30T18:30:00.000Z"},"requestId":"41600367-9a3a-4bc7-b55c-f33df62981a0","timestamp":"2025-05-29T14:31:40.131Z","userAgent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"}
 {"duration":"124ms","level":"info","message":"Request completed","method":"GET","path":"/summary","requestId":"41600367-9a3a-4bc7-b55c-f33df62981a0","statusCode":304,"timestamp":"2025-05-29T14:31:40.255Z"}
 {"level":"info","message":"Server is running on port 5000","timestamp":"2025-05-29T14:39:17.128Z"}
+{"level":"info","message":"Server is running on port 5000","timestamp":"2025-05-29T18:05:20.567Z"}
