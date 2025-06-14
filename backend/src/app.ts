@@ -31,7 +31,7 @@ app.use(cors());
 app.use(requestLoggerMiddleware);
 
 // Rate limiting
-app.use('/api/', apiRateLimiter);
+// app.use('/api/', apiRateLimiter);
 
 // Body parsing
 app.use(express.json());

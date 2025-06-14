@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, addMonths } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { menuService } from '../../../services/menu.service';
 import { mealService, type Meal } from '../../../services/meal.service';
@@ -37,18 +37,18 @@ const MenuCalendar: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState(() => addMonths(new Date(), 1)); // Set to next month
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentDate]); // Refetch when currentDate changes
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const today = new Date();
-      const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
       const [calendarData, mealsData] = await Promise.all([
         menuService.getMenuCalendarByDateRange(startDate, endDate),
@@ -62,9 +62,8 @@ const MenuCalendar: React.FC = () => {
       console.error('Error fetching data:', error);
       if (error.response?.data?.error === 'Menu calendar not found') {
         // Create empty events for the current month
-        const today = new Date();
-        const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
         const emptyEvents = createEmptyEvents(startDate, endDate);
         setEvents(emptyEvents);
       } else {
@@ -81,11 +80,12 @@ const MenuCalendar: React.FC = () => {
 
     while (currentDate <= endDate) {
       Object.values(MealType).forEach(mealType => {
+        const eventDate = new Date(currentDate);
         events.push({
-          id: `empty-${currentDate.toISOString()}-${mealType}`,
+          id: `empty-${eventDate.toISOString()}-${mealType}`,
           title: `Add ${mealType}`,
-          start: new Date(currentDate.setHours(getMealTypeHour(mealType), 0, 0)),
-          end: new Date(currentDate.setHours(getMealTypeHour(mealType) + 1, 0, 0)),
+          start: new Date(eventDate.setHours(getMealTypeHour(mealType), 0, 0)),
+          end: new Date(eventDate.setHours(getMealTypeHour(mealType) + 1, 0, 0)),
           mealType,
         });
       });
@@ -108,22 +108,24 @@ const MenuCalendar: React.FC = () => {
         if (items.length > 0) {
           items.forEach(item => {
             const meal = meals.find(m => m.id === item.mealId);
+            const eventDate = new Date(date);
             events.push({
               id: item.id,
               title: meal?.name || 'Unknown Meal',
-              start: new Date(date.setHours(getMealTypeHour(mealType), 0, 0)),
-              end: new Date(date.setHours(getMealTypeHour(mealType) + 1, 0, 0)),
+              start: new Date(eventDate.setHours(getMealTypeHour(mealType), 0, 0)),
+              end: new Date(eventDate.setHours(getMealTypeHour(mealType) + 1, 0, 0)),
               mealType,
               menuItem: item,
             });
           });
         } else {
           // Add placeholder event for empty meal slots
+          const eventDate = new Date(date);
           events.push({
             id: `empty-${date.toISOString()}-${mealType}`,
             title: `Add ${mealType}`,
-            start: new Date(date.setHours(getMealTypeHour(mealType), 0, 0)),
-            end: new Date(date.setHours(getMealTypeHour(mealType) + 1, 0, 0)),
+            start: new Date(eventDate.setHours(getMealTypeHour(mealType), 0, 0)),
+            end: new Date(eventDate.setHours(getMealTypeHour(mealType) + 1, 0, 0)),
             mealType,
           });
         }
@@ -171,6 +173,10 @@ const MenuCalendar: React.FC = () => {
     }
   };
 
+  const handleNavigate = (newDate: Date) => {
+    setCurrentDate(newDate);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -204,7 +210,9 @@ const MenuCalendar: React.FC = () => {
         style={{ height: '100%' }}
         onSelectEvent={handleEventClick}
         views={['month', 'week', 'day']}
-        defaultView="week"
+        defaultView="month"
+        date={currentDate}
+        onNavigate={handleNavigate}
         eventPropGetter={(event) => ({
           className: `bg-${getMealTypeColor(event.mealType)}-500 hover:bg-${getMealTypeColor(event.mealType)}-600`,
         })}

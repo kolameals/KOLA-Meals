@@ -1,10 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/src/index.js",
-    "dev": "nodemon src/index.ts",
+    "start": "node dist/index.js",
+    "dev": "nodemon --exec \"node --loader ts-node/esm\" src/index.ts",
     "build": "tsc",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -19,6 +20,8 @@
   "description": "",
   "dependencies": {
     "@cashfreepayments/cashfree-js": "^1.0.5",
+    "@google/genai": "^1.0.0",
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.8.2",
     "@types/helmet": "^0.0.48",
     "@types/ioredis": "^4.28.10",

@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER';
+import { MealType } from './meal.types';
 
 // Base Types
 export interface MenuItem {
@@ -49,11 +48,9 @@ export interface MenuCalendar {
 // DTOs
 export interface CreateMenuItemDto {
   mealId: string;
-  price: number;
-  isAvailable: boolean;
-  mealType: MealType;
-  dayOfWeek: number;
   dailyMenuId: string;
+  mealType: MealType;
+  price: number;
 }
 
 export interface UpdateMenuItemDto {

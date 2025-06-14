@@ -1,16 +1,21 @@
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import { AppError } from '../types/error.types';
 import logger from '../config/logger.config';
 
 // Initialize Firebase Admin
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-    })
-  });
+try {
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+      })
+    });
+  }
+} catch (error) {
+  logger.error('Error initializing Firebase Admin:', error);
+  throw new Error('Failed to initialize Firebase Admin SDK');
 }
 
 // Temporary storage for OTPs (for testing only)

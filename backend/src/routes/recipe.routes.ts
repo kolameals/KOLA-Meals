@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/auth.middleware';
 import prisma from '../lib/prisma';
 import { MealType } from '@prisma/client';
 import { MealCategory } from '../types/meal.types';
+import { GeminiService } from '../services/gemini.service';
 
 const router = Router();
 
@@ -219,6 +220,22 @@ router.delete('/:id', authMiddleware(['ADMIN']), async (req: Request, res: Respo
   } catch (error) {
     console.error('Error deleting recipe:', error);
     res.status(500).json({ success: false, error: 'Failed to delete recipe' });
+  }
+});
+
+// Generate recipe using Gemini AI
+router.post('/generate', authMiddleware(['ADMIN']), async (req: Request, res: Response) => {
+  try {
+    const { prompt, servings } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ success: false, error: 'Prompt is required' });
+    }
+
+    const recipe = await GeminiService.generateRecipe(prompt, servings || 1);
+    res.json({ success: true, data: recipe });
+  } catch (error) {
+    console.error('Error generating recipe:', error);
+    res.status(500).json({ success: false, error: 'Failed to generate recipe' });
   }
 });
 

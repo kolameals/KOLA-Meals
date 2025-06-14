@@ -10,6 +10,15 @@ const api = axios.create({
   timeout: 30000, // 30 second timeout
 });
 
+// Create a separate instance for recipe generation with longer timeout
+export const recipeApi = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 120000, // 2 minute timeout for recipe generation
+});
+
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
@@ -26,6 +35,21 @@ const processQueue = (error: any = null, token: string | null = null) => {
 
 // Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
+  (config) => {
+    const token = sessionStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    console.error('Request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add auth interceptor to recipeApi
+recipeApi.interceptors.request.use(
   (config) => {
     const token = sessionStorage.getItem('token');
     if (token) {

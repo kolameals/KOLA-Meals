@@ -4,6 +4,12 @@ import { menuService } from '../../services/menu.service';
 import type { MenuItem, CreateMenuItemDto } from '../../types/menu.types';
 import type { Meal } from '../../types/meal.types';
 import { MealType } from '../../types/meal.types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
 
 interface MenuItemModalProps {
   isOpen: boolean;
@@ -39,17 +45,35 @@ const MenuItemModal: React.FC<MenuItemModalProps> = ({
         setPrice(0);
       }
     }
-  }, [isOpen, existingMenuItem]);
+  }, [isOpen, existingMenuItem, mealType]);
 
   const fetchMeals = async () => {
     try {
-      const availableMeals = await mealService.getMeals();
-      // Filter meals by type
-      const filteredMeals = availableMeals.filter(meal => meal.type === mealType);
+      setLoading(true);
+      const response = await mealService.getMeals();
+      console.log('Fetched meals:', response);
+      
+      // Ensure we're working with the data array
+      const availableMeals = Array.isArray(response) ? response : response.data || [];
+      
+      // Filter meals by type, case-insensitive
+      const filteredMeals = availableMeals.filter(meal => 
+        meal.type?.toUpperCase() === mealType.toUpperCase()
+      );
+      
+      console.log('Filtered meals for type', mealType, ':', filteredMeals);
       setMeals(filteredMeals);
+      
+      if (filteredMeals.length === 0) {
+        setError(`No meals available for ${mealType.toLowerCase()}`);
+      } else {
+        setError(null);
+      }
     } catch (err) {
       console.error('Error fetching meals:', err);
       setError('Failed to load meals');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,11 +88,16 @@ const MenuItemModal: React.FC<MenuItemModalProps> = ({
     setError(null);
 
     try {
+      const selectedMeal = meals.find(m => m.id === selectedMealId);
+      if (!selectedMeal) {
+        throw new Error('Selected meal not found');
+      }
+
       const menuItemData: CreateMenuItemDto = {
         mealId: selectedMealId,
         dailyMenuId: existingMenuItem?.dailyMenuId || '', // This will be set by the backend
         mealType,
-        price,
+        price: price || selectedMeal.price || 0,
       };
 
       let savedMenuItem: MenuItem;
@@ -88,68 +117,62 @@ const MenuItemModal: React.FC<MenuItemModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">
-            {existingMenuItem ? 'Edit Menu Item' : 'Add Menu Item'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>
+            {existingMenuItem ? 'Edit Menu Item' : `Add ${mealType}`}
+          </DialogTitle>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 mb-2">Date</label>
-            <input
+          <div className="space-y-2">
+            <Label>Date</Label>
+            <Input
               type="date"
               value={date.toISOString().split('T')[0]}
               disabled
-              className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+              className="bg-gray-50"
             />
           </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2">Meal Type</label>
-            <input
+          <div className="space-y-2">
+            <Label>Meal Type</Label>
+            <Input
               type="text"
               value={mealType.charAt(0) + mealType.slice(1).toLowerCase()}
               disabled
-              className="w-full px-3 py-2 border rounded-lg bg-gray-50"
+              className="bg-gray-50"
             />
           </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2">Select Meal</label>
-            <select
+          <div className="space-y-2">
+            <Label>Select Meal</Label>
+            <Select
               value={selectedMealId}
-              onChange={(e) => setSelectedMealId(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
+              onValueChange={setSelectedMealId}
+              disabled={loading}
             >
-              <option value="">Select a meal</option>
-              {meals.map((meal) => (
-                <option key={meal.id} value={meal.id}>
-                  {meal.name} - ${meal.price}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a meal" />
+              </SelectTrigger>
+              <SelectContent>
+                {meals.map((meal) => (
+                  <SelectItem key={meal.id} value={meal.id}>
+                    {meal.name} - ₹{meal.price}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div>
-            <label className="block text-gray-700 mb-2">Price</label>
-            <input
+          <div className="space-y-2">
+            <Label>Price (₹)</Label>
+            <Input
               type="number"
               value={price}
               onChange={(e) => setPrice(Number(e.target.value))}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               min="0"
               step="0.01"
               required
@@ -157,29 +180,33 @@ const MenuItemModal: React.FC<MenuItemModalProps> = ({
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm">{error}</div>
+            <div className="text-sm text-red-500">{error}</div>
           )}
 
-          <div className="flex justify-end space-x-4 mt-6">
-            <button
+          <DialogFooter>
+            <Button
               type="button"
+              variant="outline"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
               disabled={loading}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? 'Saving...' : existingMenuItem ? 'Update' : 'Add'}
-            </button>
-          </div>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : existingMenuItem ? 'Update' : 'Add'}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
