@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { authConfig } from '../config/auth.config';
-import { AppError } from '../types/error.types';
-import prisma from '../lib/prisma';
-import { AuthenticatedUser } from '../types';
+import { authConfig } from '../config/auth.config.js';
+import { AppError } from '../types/error.types.js';
+import prisma from '../lib/prisma.js';
+import { AuthenticatedUser } from '../types/index.js';
 
 type Role = 'ADMIN' | 'CUSTOMER' | 'DELIVERY_PARTNER';
 

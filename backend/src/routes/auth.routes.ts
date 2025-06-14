@@ -3,36 +3,36 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { authConfig } from '../config/auth.config';
-import { firebaseAuthService } from '../services/firebase-auth.service';
-import { handleGoogleAuth } from '../services/google-auth.service';
-import { authService } from '../services/auth.service';
-import { validateRequest } from '../middleware/validation.middleware';
-import { AppError } from '../types/error.types';
+import { Strategy as GoogleStrategy, Profile as GoogleProfile } from 'passport-google-oauth20';
+import { authConfig } from '../config/auth.config.js';
+import { firebaseAuthService } from '../services/firebase-auth.service.js';
+import { handleGoogleAuth } from '../services/google-auth.service.js';
+import { authService } from '../services/auth.service.js';
+import { validateRequest } from '../middleware/validation.middleware.js';
+import { AppError } from '../types/error.types.js';
 import Joi from 'joi';
-import logger from '../config/logger.config';
-import prisma from '../lib/prisma';
-import { authMiddleware } from '../middleware/auth.middleware';
+import logger from '../config/logger.config.js';
+import prisma from '../lib/prisma.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
 // Configure Google Strategy
-passport.use(new GoogleStrategy({
+passport.use(new (GoogleStrategy as any)({
   clientID: authConfig.google.clientID!,
   clientSecret: authConfig.google.clientSecret!,
-  callbackURL: authConfig.google.callbackURL
-}, async (accessToken, refreshToken, profile, done) => {
+  callbackURL: authConfig.google.callbackURL,
+  scope: ['profile', 'email']
+}, async (accessToken, refreshToken, profile: any, done) => {
   try {
-    const result = await handleGoogleAuth({
-      id: profile.id,
-      email: profile.emails![0].value,
-      name: profile.displayName,
-      picture: profile.photos?.[0]?.value
+    const user = await handleGoogleAuth({
+      email: profile.emails?.[0]?.value || '',
+      name: profile.displayName || '',
+      picture: profile.photos?.[0]?.value || '',
+      id: profile.id
     });
-    return done(null, result);
+    return done(null, user);
   } catch (error) {
-    logger.error('Google auth error:', { error, profile });
     return done(error as Error);
   }
 }));

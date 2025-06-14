@@ -1,7 +1,41 @@
 import { Request, Response } from 'express';
-import { PrismaClient, OrderStatus, Role } from '@prisma/client';
+import { PrismaClient, OrderStatus, Role, Order, OrderItem, Meal, MealFeedback } from '@prisma/client';
 import { z } from 'zod';
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
+
+interface OrderWithItems extends Order {
+  items: (OrderItem & {
+    meal: Meal;
+  })[];
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+interface OrderFrequencyDistribution {
+  '1-2 orders': number;
+  '3-5 orders': number;
+  '6-10 orders': number;
+  '10+ orders': number;
+}
+
+interface PeakHour {
+  hour: number;
+  orderCount: number;
+}
+
+interface TopItem {
+  name: string;
+  count: number;
+}
+
+interface SentimentAnalysis {
+  positive: number;
+  neutral: number;
+  negative: number;
+}
 
 const analyticsFilterSchema = z.object({
   startDate: z.string(),
@@ -30,22 +64,22 @@ export const customerAnalyticsController = {
           },
           user: true
         }
-      });
+      }) as OrderWithItems[];
 
       // Calculate customer behavior metrics
       const totalCustomers = new Set(orders.map(order => order.userId)).size;
       const totalOrders = orders.length;
-      const averageOrderValue = orders.reduce((acc, order) => {
-        return acc + order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const averageOrderValue = orders.reduce((acc: number, order: OrderWithItems) => {
+        return acc + order.items.reduce((sum: number, item: OrderItem) => sum + (item.price * item.quantity), 0);
       }, 0) / totalOrders;
 
       // Calculate order frequency distribution
-      const customerOrderCounts = orders.reduce((acc: { [key: string]: number }, order) => {
+      const customerOrderCounts = orders.reduce((acc: { [key: string]: number }, order: OrderWithItems) => {
         acc[order.userId] = (acc[order.userId] || 0) + 1;
         return acc;
       }, {});
 
-      const orderFrequencyDistribution = {
+      const orderFrequencyDistribution: OrderFrequencyDistribution = {
         '1-2 orders': 0,
         '3-5 orders': 0,
         '6-10 orders': 0,
@@ -60,7 +94,7 @@ export const customerAnalyticsController = {
       });
 
       // Calculate peak ordering hours
-      const peakHours = Array.from({ length: 24 }, (_, hour) => ({
+      const peakHours: PeakHour[] = Array.from({ length: 24 }, (_, hour) => ({
         hour,
         orderCount: orders.filter(order => order.createdAt.getHours() === hour).length
       }));
@@ -102,10 +136,10 @@ export const customerAnalyticsController = {
             }
           }
         }
-      });
+      }) as OrderWithItems[];
 
       // Calculate category preferences
-      const categoryPreferences = orders.reduce((acc: { [key: string]: number }, order) => {
+      const categoryPreferences = orders.reduce((acc: { [key: string]: number }, order: OrderWithItems) => {
         order.items.forEach(item => {
           const category = item.meal.category;
           acc[category] = (acc[category] || 0) + item.quantity;
@@ -114,7 +148,7 @@ export const customerAnalyticsController = {
       }, {});
 
       // Calculate popular items
-      const popularItems = orders.reduce((acc: { [key: string]: number }, order) => {
+      const popularItems = orders.reduce((acc: { [key: string]: number }, order: OrderWithItems) => {
         order.items.forEach(item => {
           const itemName = item.meal.name;
           acc[itemName] = (acc[itemName] || 0) + item.quantity;
@@ -123,13 +157,13 @@ export const customerAnalyticsController = {
       }, {});
 
       // Sort and get top 10 items
-      const topItems = Object.entries(popularItems)
+      const topItems: TopItem[] = Object.entries(popularItems)
         .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 10)
         .map(([name, count]) => ({ name, count }));
 
       // Calculate dietary preferences
-      const dietaryPreferences = orders.reduce((acc: { [key: string]: number }, order) => {
+      const dietaryPreferences = orders.reduce((acc: { [key: string]: number }, order: OrderWithItems) => {
         order.items.forEach(item => {
           const dietaryType = item.meal.type || 'Regular';
           acc[dietaryType] = (acc[dietaryType] || 0) + item.quantity;
@@ -167,16 +201,16 @@ export const customerAnalyticsController = {
 
       // Calculate overall satisfaction metrics
       const totalFeedback = feedback.length;
-      const averageRating = feedback.reduce((acc: number, f) => acc + f.rating, 0) / totalFeedback;
+      const averageRating = feedback.reduce((acc: number, f: MealFeedback) => acc + f.rating, 0) / totalFeedback;
 
       // Calculate rating distribution
-      const ratingDistribution = feedback.reduce((acc: { [key: number]: number }, f) => {
+      const ratingDistribution = feedback.reduce((acc: { [key: number]: number }, f: MealFeedback) => {
         acc[f.rating] = (acc[f.rating] || 0) + 1;
         return acc;
       }, {});
 
       // Analyze feedback sentiment
-      const sentimentAnalysis = feedback.reduce((acc: { positive: number; neutral: number; negative: number }, f) => {
+      const sentimentAnalysis = feedback.reduce((acc: SentimentAnalysis, f: MealFeedback) => {
         if (f.rating >= 4) acc.positive++;
         else if (f.rating >= 3) acc.neutral++;
         else acc.negative++;
@@ -184,7 +218,7 @@ export const customerAnalyticsController = {
       }, { positive: 0, neutral: 0, negative: 0 });
 
       // Calculate common themes in feedback
-      const commonThemes = feedback.reduce((acc: { [key: string]: number }, f) => {
+      const commonThemes = feedback.reduce((acc: { [key: string]: number }, f: MealFeedback) => {
         const themes = f.comments?.toLowerCase().split(' ') || [];
         themes.forEach(theme => {
           if (theme.length > 3) { // Ignore short words

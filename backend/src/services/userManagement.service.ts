@@ -1,7 +1,7 @@
 import { User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import prisma from '../lib/prisma';
-import { UserRole, CreateUserData, UpdateUserData } from '../types/user.types';
+import prisma from '../lib/prisma.js';
+import { UserRole, CreateUserData, UpdateUserData } from '../types/user.types.js';
 
 interface PaginatedResponse<T> {
   data: T[];

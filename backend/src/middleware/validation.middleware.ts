@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { AppError } from '../types/error.types';
+import { AppError } from '../types/error.types.js';
 
-const ajv = new Ajv({ allErrors: true });
-addFormats(ajv);
+const ajv = new Ajv.default({ allErrors: true });
+addFormats.default(ajv);
 
 interface ValidationSchema {
   body?: object;

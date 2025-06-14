@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CostType, CostFrequency } from '../types/cost.types';
+import { CostType, CostFrequency } from '../types/cost.types.js';
 
 export const costSchema = z.object({
   category_id: z.number(),

@@ -1,4 +1,4 @@
-import { GeminiService } from './services/gemini.service';
+import { GeminiService } from './services/gemini.service.js';
 
 async function main() {
   const prompt = "Create a simple pasta recipe";

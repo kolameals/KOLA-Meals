@@ -1,14 +1,14 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 import {
   createUser,
   getUser,
   updateUser,
   deleteUser,
   getAllUsers
-} from '../services/user.service';
-import { validateRequest } from '../middleware/validation.middleware';
-import prisma from '../lib/prisma';
+} from '../services/user.service.js';
+import { validateRequest } from '../middleware/validation.middleware.js';
+import prisma from '../lib/prisma.js';
 import bcryptjs from 'bcryptjs';
 
 const router = Router();
@@ -65,7 +65,7 @@ const router = Router();
  */
 router.get('/profile', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userObj = req.user as import('../types').AuthenticatedUser;
+    const userObj = req.user as import('../types/index.js').AuthenticatedUser;
     const user = await getUser(userObj.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -135,7 +135,7 @@ router.put('/profile', authMiddleware, validateRequest({
   }
 }), async (req: Request, res: Response) => {
   try {
-    const userObj = req.user as import('../types').AuthenticatedUser;
+    const userObj = req.user as import('../types/index.js').AuthenticatedUser;
     const user = await updateUser(userObj.id, req.body);
     res.json({ success: true, data: user });
   } catch (error) {
@@ -186,7 +186,7 @@ router.put('/profile', authMiddleware, validateRequest({
  */
 router.get('/addresses', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userObj = req.user as import('../types').AuthenticatedUser;
+    const userObj = req.user as import('../types/index.js').AuthenticatedUser;
     const user = await getUser(userObj.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -312,7 +312,7 @@ router.post('/addresses', authMiddleware, validateRequest({
   }
 }), async (req: Request, res: Response) => {
   try {
-    const userObj = req.user as import('../types').AuthenticatedUser;
+    const userObj = req.user as import('../types/index.js').AuthenticatedUser;
     
     // Check if user exists
     const user = await prisma.user.findUnique({
@@ -427,7 +427,7 @@ router.get('/', authMiddleware(['ADMIN']), async (req: Request, res: Response) =
 
 router.get('/:userId', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userObj = req.user as import('../types').AuthenticatedUser;
+    const userObj = req.user as import('../types/index.js').AuthenticatedUser;
     const user = await getUser(userObj.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

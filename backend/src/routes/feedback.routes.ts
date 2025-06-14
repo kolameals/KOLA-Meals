@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { feedbackService } from '../services/feedback.service';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { validateRequest } from '../middleware/validation.middleware';
+import { feedbackService } from '../services/feedback.service.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { validateRequest } from '../middleware/validation.middleware.js';
 import { z } from 'zod';
-import type { FeedbackType, FeedbackStatus, IssuePriority, IssueStatus } from '../services/feedback.service';
+import type { FeedbackType, FeedbackStatus, IssuePriority, IssueStatus } from '../services/feedback.service.js';
 
 interface AuthenticatedRequest extends Request {
   user?: {

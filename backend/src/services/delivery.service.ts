@@ -1,5 +1,5 @@
-import { AppError } from '../types/error.types';
-import prisma from '../lib/prisma';
+import { AppError } from '../types/error.types.js';
+import prisma from '../lib/prisma.js';
 
 interface CreateDeliveryData {
   orderId: string;

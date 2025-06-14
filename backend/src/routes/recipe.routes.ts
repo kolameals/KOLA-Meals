@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth.middleware';
-import prisma from '../lib/prisma';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { validateRequest } from '../middleware/validation.middleware.js';
+import prisma from '../lib/prisma.js';
 import { MealType } from '@prisma/client';
-import { MealCategory } from '../types/meal.types';
-import { GeminiService } from '../services/gemini.service';
+import { MealCategory } from '../types/meal.types.js';
+import { GeminiService } from '../services/gemini.service.js';
 
 const router = Router();
 

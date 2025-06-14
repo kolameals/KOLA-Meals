@@ -1,5 +1,5 @@
 import { GoogleGenAI, Modality } from "@google/genai";
-import 'dotenv/config';
+import 'dotenv/config.js';
 import { z } from 'zod';
 import * as fs from "fs";
 

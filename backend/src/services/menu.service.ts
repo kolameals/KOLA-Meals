@@ -6,7 +6,7 @@ import type {
   UpdateDailyMenuDto,
   CreateMenuCalendarDto,
   UpdateMenuCalendarDto,
-} from '../types/menu.types';
+} from '../types/menu.types.js';
 
 const prisma = new PrismaClient();
 

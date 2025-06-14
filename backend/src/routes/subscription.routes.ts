@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { AuthenticatedUser } from '../types';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { AuthenticatedUser } from '../types/index.js';
+import { z } from 'zod';
+import prisma from '../lib/prisma.js';
 import {
   createSubscription,
   getSubscription,
@@ -8,8 +10,7 @@ import {
   cancelSubscription,
   pauseSubscription,
   resumeSubscription
-} from '../services/subscription.service';
-import prisma from '../lib/prisma';
+} from '../services/subscription.service.js';
 
 const router = Router();
 

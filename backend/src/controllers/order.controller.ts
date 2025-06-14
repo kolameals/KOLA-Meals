@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { OrderService } from '../services/order.service';
-import { AppError } from '../types/error.types';
-import logger from '../config/logger.config';
-import { AuthenticatedUser } from '../types';
+import { OrderService } from '../services/order.service.js';
+import { AppError } from '../types/error.types.js';
+import logger from '../config/logger.config.js';
+import { AuthenticatedUser } from '../types/index.js';
 
 export class OrderController {
   private orderService: OrderService;

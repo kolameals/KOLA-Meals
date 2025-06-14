@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import { kitchenAnalyticsController } from '../controllers/kitchenAnalytics.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { Router, Request, Response } from 'express';
+import { kitchenAnalyticsController } from '../controllers/kitchenAnalytics.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = Router();
 

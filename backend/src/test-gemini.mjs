@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import 'dotenv/config.js';
 import { GoogleGenAI } from "@google/genai";
 
 // Initialize the GoogleGenAI client

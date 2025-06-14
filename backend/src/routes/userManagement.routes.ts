@@ -1,8 +1,8 @@
 import express from 'express';
-import { Request, Response } from 'express';
-import prisma from '../lib/prisma';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { UserRole } from '../types/user.types';
+import { Router, Request, Response } from 'express';
+import prisma from '../lib/prisma.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { UserRole } from '../types/user.types.js';
 import {
   getUsers,
   createUser,
@@ -11,7 +11,7 @@ import {
   getDeliveryPartners,
   createDeliveryPartner,
   getActiveSubscribers
-} from '../controllers/userManagement.controller';
+} from '../controllers/userManagement.controller.js';
 
 const router = express.Router();
 

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { userManagementService } from '../services/userManagement.service';
-import { validateCreateUser, validateUpdateUser } from '../validators/userManagement.validator';
+import { userManagementService } from '../services/userManagement.service.js';
+import { validateCreateUser, validateUpdateUser } from '../validators/userManagement.validator.js';
 
 export const getUsers = async (req: Request, res: Response) => {
   try {

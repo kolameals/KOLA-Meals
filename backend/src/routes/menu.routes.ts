@@ -1,6 +1,6 @@
 import express from 'express';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { menuService } from '../services/menu.service';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { menuService } from '../services/menu.service.js';
 import {
   createMenuItemSchema,
   updateMenuItemSchema,
@@ -8,8 +8,11 @@ import {
   updateDailyMenuSchema,
   createMenuCalendarSchema,
   updateMenuCalendarSchema,
-} from '../types/menu.types';
+} from '../types/menu.types.js';
 import { ZodError } from 'zod';
+import { z } from 'zod';
+import type { MenuItem, CreateMenuItemDto, CreateDailyMenuDto, UpdateDailyMenuDto, CreateMenuCalendarDto, UpdateMenuCalendarDto } from '../types/menu.types.js';
+import { MealType } from '@prisma/client';
 
 const router = express.Router();
 
@@ -20,7 +23,12 @@ router.post(
   async (req, res) => {
     try {
       const data = createMenuItemSchema.parse(req.body);
-      const menuItem = await menuService.createMenuItem(data);
+      const menuItem = await menuService.createMenuItem({
+        mealId: data.mealId!,
+        dailyMenuId: data.dailyMenuId!,
+        mealType: data.mealType!,
+        price: data.price!
+      });
       res.status(201).json(menuItem);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -70,7 +78,15 @@ router.post(
   async (req, res) => {
     try {
       const data = createDailyMenuSchema.parse(req.body);
-      const dailyMenu = await menuService.createDailyMenu(data);
+      const dailyMenu = await menuService.createDailyMenu({
+        date: data.date!,
+        items: data.items?.map(item => ({
+          mealId: item.mealId!,
+          dailyMenuId: item.dailyMenuId!,
+          mealType: item.mealType!,
+          price: item.price!
+        }))
+      });
       res.status(201).json(dailyMenu);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -88,8 +104,16 @@ router.put(
   async (req, res) => {
     try {
       const data = updateDailyMenuSchema.parse(req.body);
-      const dailyMenu = await menuService.updateDailyMenu(req.params.id, data);
-      res.json(dailyMenu);
+      const updatedDailyMenu = await menuService.updateDailyMenu(req.params.id, {
+        date: data.date,
+        items: data.items?.map(item => ({
+          mealId: item.mealId!,
+          dailyMenuId: item.dailyMenuId!,
+          mealType: item.mealType!,
+          price: item.price!
+        }))
+      });
+      res.json(updatedDailyMenu);
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(400).json({ error: error.errors });
@@ -140,7 +164,19 @@ router.post(
   async (req, res) => {
     try {
       const data = createMenuCalendarSchema.parse(req.body);
-      const menuCalendar = await menuService.createMenuCalendar(data);
+      const menuCalendar = await menuService.createMenuCalendar({
+        startDate: data.startDate!,
+        endDate: data.endDate!,
+        dailyMenus: data.dailyMenus?.map(menu => ({
+          date: menu.date!,
+          items: menu.items?.map(item => ({
+            mealId: item.mealId!,
+            dailyMenuId: item.dailyMenuId!,
+            mealType: item.mealType!,
+            price: item.price!
+          }))
+        }))
+      });
       res.status(201).json(menuCalendar);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -158,7 +194,19 @@ router.put(
   async (req, res) => {
     try {
       const data = updateMenuCalendarSchema.parse(req.body);
-      const menuCalendar = await menuService.updateMenuCalendar(req.params.id, data);
+      const menuCalendar = await menuService.updateMenuCalendar(req.params.id, {
+        startDate: data.startDate,
+        endDate: data.endDate,
+        dailyMenus: data.dailyMenus?.map(menu => ({
+          date: menu.date!,
+          items: menu.items?.map(item => ({
+            mealId: item.mealId!,
+            dailyMenuId: item.dailyMenuId!,
+            mealType: item.mealType!,
+            price: item.price!
+          }))
+        }))
+      });
       res.json(menuCalendar);
     } catch (error) {
       if (error instanceof ZodError) {

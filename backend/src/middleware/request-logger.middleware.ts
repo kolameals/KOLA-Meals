@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { requestLogger } from '../config/logger.config';
+import { requestLogger } from '../config/logger.config.js';
 
 export const requestLoggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Generate request ID if not present

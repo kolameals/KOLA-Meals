@@ -1,7 +1,7 @@
-import { Router } from 'express';
-import { tiffinBoxService } from '../services/tiffin-box.service';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { validateRequest } from '../middleware/validation.middleware';
+import { Router, Request, Response } from 'express';
+import { tiffinBoxService } from '../services/tiffin-box.service.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { validateRequest } from '../middleware/validation.middleware.js';
 import { z } from 'zod';
 
 const router = Router();

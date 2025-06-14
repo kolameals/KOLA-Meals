@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { paymentService } from '../services/payment.service';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { validateRequest } from '../middleware/validation.middleware';
+import { paymentService } from '../services/payment.service.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { validateRequest } from '../middleware/validation.middleware.js';
 
 const router = Router();
 

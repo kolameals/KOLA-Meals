@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { authConfig } from '../config/auth.config';
-import { AppError } from '../types/error.types';
-import logger from '../config/logger.config';
-import prisma from '../lib/prisma';
+import { authConfig } from '../config/auth.config.js';
+import { AppError } from '../types/error.types.js';
+import logger from '../config/logger.config.js';
+import prisma from '../lib/prisma.js';
 
 type UserWithLock = {
   id: string;

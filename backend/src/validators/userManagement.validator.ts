@@ -1,5 +1,5 @@
-import { UserRole } from '../types/user.types';
-import type { CreateUserData, UpdateUserData } from '../types/user.types';
+import { UserRole } from '../types/user.types.js';
+import type { CreateUserData, UpdateUserData } from '../types/user.types.js';
 
 export const validateCreateUser = (data: CreateUserData): string | null => {
   if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {

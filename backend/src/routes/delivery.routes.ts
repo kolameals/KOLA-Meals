@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware.js';
 import {
   createDelivery,
   getDelivery,
   updateDeliveryStatus,
   getDeliveriesByUser,
   getPendingDeliveries
-} from '../services/delivery.service';
-import prisma from '../lib/prisma';
+} from '../services/delivery.service.js';
+import prisma from '../lib/prisma.js';
 
 const router = Router();
 
@@ -51,7 +51,7 @@ router.patch('/:deliveryId/status', authMiddleware, async (req: Request, res: Re
 // Get user's deliveries
 router.get('/my-deliveries', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userObj = req.user as import('../types').AuthenticatedUser;
+    const userObj = req.user as import('../types/index.js').AuthenticatedUser;
     const deliveries = await getDeliveriesByUser(userObj.id);
     res.json({ success: true, data: deliveries });
   } catch (error) {

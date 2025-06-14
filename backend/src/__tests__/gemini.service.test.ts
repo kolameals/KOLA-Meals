@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { GeminiService } from '../services/gemini.service';
+import { GeminiService } from '../services/gemini.service.js';
 
 describe('GeminiService', () => {
   it('should generate content successfully', async () => {

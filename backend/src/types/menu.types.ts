@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MealType } from './meal.types';
+import { MealType } from './meal.types.js';
 
 // Base Types
 export interface MenuItem {

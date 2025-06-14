@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { inventoryService } from '../services/inventory.service';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { validateRequest } from '../middleware/validation.middleware';
+import { inventoryService } from '../services/inventory.service.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { validateRequest } from '../middleware/validation.middleware.js';
 import { z } from 'zod';
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 
 const router = Router();
 

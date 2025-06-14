@@ -1,8 +1,65 @@
 import { Request, Response } from 'express';
-import { PrismaClient, OrderStatus, Role } from '@prisma/client';
+import { PrismaClient, OrderStatus, Role, Order, OrderItem, Meal } from '@prisma/client';
 import { z } from 'zod';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
+
+interface OrderWithItems extends Order {
+  items: (OrderItem & {
+    meal: Meal;
+  })[];
+}
+
+interface PeakHour {
+  hour: number;
+  orderCount: number;
+}
+
+interface CostBreakdown {
+  ingredients: number;
+  labor: number;
+  utilities: number;
+  packaging: number;
+  other: number;
+}
+
+interface CostTrend {
+  date: string;
+  totalCost: number;
+}
+
+interface EfficiencyMetrics {
+  totalOrders: number;
+  averagePreparationTime: number;
+  onTimeDeliveryRate: number;
+  kitchenUtilizationRate: number;
+  peakHours: PeakHour[];
+}
+
+interface CostAnalysis {
+  totalCost: number;
+  costBreakdown: CostBreakdown;
+  costPerOrder: number;
+  costTrends: CostTrend[];
+}
+
+interface ResourceUtilization {
+  staffUtilization: {
+    totalStaffHours: number;
+    productiveHours: number;
+    utilizationRate: number;
+  };
+  equipmentUtilization: Array<{
+    equipmentName: string;
+    utilizationRate: number;
+    downtime: number;
+  }>;
+  inventoryUtilization: {
+    totalItems: number;
+    activeItems: number;
+    utilizationRate: number;
+  };
+}
 
 const analyticsFilterSchema = z.object({
   startDate: z.string(),
@@ -71,7 +128,7 @@ export const kitchenAnalyticsController = {
           include: {
             items: true
           }
-        });
+        }) as OrderWithItems[];
 
         const totalOrders = orders.length;
         
@@ -80,7 +137,7 @@ export const kitchenAnalyticsController = {
           return res.json(fallbackData.efficiencyMetrics);
         }
 
-        const averagePreparationTime = orders.reduce((acc, order) => {
+        const averagePreparationTime = orders.reduce((acc: number, order: OrderWithItems) => {
           const prepTime = order.updatedAt ? 
             (order.updatedAt.getTime() - order.createdAt.getTime()) / (1000 * 60) : 0;
           return acc + prepTime;
@@ -93,7 +150,7 @@ export const kitchenAnalyticsController = {
         }).length / totalOrders;
 
         // Calculate peak hours
-        const peakHours = Array.from({ length: 24 }, (_, hour) => ({
+        const peakHours: PeakHour[] = Array.from({ length: 24 }, (_, hour) => ({
           hour,
           orderCount: orders.filter(order => 
             order.createdAt.getHours() === hour
@@ -140,21 +197,21 @@ export const kitchenAnalyticsController = {
               }
             }
           }
-        });
+        }) as OrderWithItems[];
 
         // Handle empty orders case
         if (orders.length === 0) {
           return res.json(fallbackData.costAnalysis);
         }
 
-        const totalCost = orders.reduce((acc, order) => {
-          const orderCost = order.items.reduce((itemAcc, item) => {
+        const totalCost = orders.reduce((acc: number, order: OrderWithItems) => {
+          const orderCost = order.items.reduce((itemAcc: number, item: OrderItem & { meal: Meal }) => {
             return itemAcc + (item.meal.price * 0.6 * item.quantity);
           }, 0);
           return acc + orderCost;
         }, 0);
 
-        const costBreakdown = {
+        const costBreakdown: CostBreakdown = {
           ingredients: totalCost * 0.6,
           labor: totalCost * 0.25,
           utilities: totalCost * 0.05,
@@ -165,17 +222,17 @@ export const kitchenAnalyticsController = {
         const costPerOrder = totalCost / orders.length;
 
         // Calculate cost trends
-        const costTrends = orders.reduce((acc: { date: string; totalCost: number }[], order) => {
+        const costTrends = orders.reduce((acc: CostTrend[], order: OrderWithItems) => {
           const date = order.createdAt.toISOString().split('T')[0];
           const existingDate = acc.find(item => item.date === date);
           
           if (existingDate) {
-            existingDate.totalCost += order.items.reduce((sum, item) => 
+            existingDate.totalCost += order.items.reduce((sum: number, item: OrderItem & { meal: Meal }) => 
               sum + (item.meal.price * 0.6 * item.quantity), 0);
           } else {
             acc.push({
               date,
-              totalCost: order.items.reduce((sum, item) => 
+              totalCost: order.items.reduce((sum: number, item: OrderItem & { meal: Meal }) => 
                 sum + (item.meal.price * 0.6 * item.quantity), 0)
             });
           }
@@ -206,49 +263,36 @@ export const kitchenAnalyticsController = {
       const { startDate, endDate } = analyticsFilterSchema.parse(req.query);
       
       try {
-        // Calculate staff utilization
-        const staffHours = await prisma.user.findMany({
-          where: {
-            role: Role.DELIVERY_PARTNER,
-            createdAt: {
-              gte: new Date(startDate),
-              lte: new Date(endDate)
-            }
-          }
-        });
-
-        // Calculate inventory utilization
-        const inventory = await prisma.rawMaterial.findMany();
-
-        // Handle empty data case
-        if (staffHours.length === 0 && inventory.length === 0) {
-          return res.json(fallbackData.resourceUtilization);
-        }
-
-        const totalStaffHours = staffHours.length * 8;
-        const productiveHours = totalStaffHours * 0.85;
-
-        // Calculate equipment utilization
-        const equipmentUtilization = [
-          { equipmentName: 'Oven', utilizationRate: 0.75, downtime: 2 },
-          { equipmentName: 'Stove', utilizationRate: 0.85, downtime: 1 },
-          { equipmentName: 'Refrigerator', utilizationRate: 0.95, downtime: 0.5 }
-        ];
-
-        const totalItems = inventory.length;
+        // Get inventory data
+        const inventory = await prisma.inventoryItem.findMany();
         const activeItems = inventory.filter(item => item.currentStock > 0).length;
+
+        // Get staff data (no KITCHEN_STAFF role in schema, so count all users for now)
+        const staff = await prisma.user.findMany();
+
+        // Calculate staff utilization
+        const totalStaffHours = staff.length * 8 * 30; // Assuming 8 hours per day, 30 days per month
+        const productiveHours = totalStaffHours * 0.85; // Assuming 85% productivity
+
+        // Get equipment data
+        const equipment = await prisma.equipmentCost.findMany();
+        const equipmentUtilization = equipment.map(eq => ({
+          equipmentName: eq.name,
+          utilizationRate: 0.75, // Placeholder value
+          downtime: 0.25 // Placeholder value
+        }));
 
         res.json({
           staffUtilization: {
             totalStaffHours,
             productiveHours,
-            utilizationRate: totalStaffHours > 0 ? productiveHours / totalStaffHours : 0
+            utilizationRate: productiveHours / totalStaffHours
           },
           equipmentUtilization,
           inventoryUtilization: {
-            totalItems,
+            totalItems: inventory.length,
             activeItems,
-            utilizationRate: totalItems > 0 ? activeItems / totalItems : 0
+            utilizationRate: activeItems / inventory.length
           }
         });
       } catch (error) {

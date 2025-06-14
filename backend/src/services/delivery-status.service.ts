@@ -1,6 +1,6 @@
-import { AppError } from '../types/error.types';
-import prisma from '../lib/prisma';
-import logger from '../config/logger.config';
+import { AppError } from '../types/error.types.js';
+import prisma from '../lib/prisma.js';
+import logger from '../config/logger.config.js';
 import { DeliveryStatusEnum, OldTiffinStatusEnum } from '@prisma/client';
 
 export const deliveryStatusService = {

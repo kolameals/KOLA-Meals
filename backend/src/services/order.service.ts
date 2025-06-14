@@ -1,6 +1,6 @@
 import { PrismaClient, OrderStatus } from '@prisma/client';
-import { AppError } from '../types/error.types';
-import logger from '../config/logger.config';
+import { AppError } from '../types/error.types.js';
+import logger from '../config/logger.config.js';
 
 export class OrderService {
   private prisma: PrismaClient;

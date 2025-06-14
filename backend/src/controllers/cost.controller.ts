@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Prisma, CostFrequency } from '@prisma/client';
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
 
 // Define types for our cost models
 type StaffCost = {

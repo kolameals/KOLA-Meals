@@ -1,8 +1,8 @@
-import { AppError } from '../types/error.types';
-import prisma from '../lib/prisma';
-import { authConfig } from '../config/auth.config';
+import { AppError } from '../types/error.types.js';
+import prisma from '../lib/prisma.js';
+import { authConfig } from '../config/auth.config.js';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import logger from '../config/logger.config';
+import logger from '../config/logger.config.js';
 
 interface GoogleUser {
   id: string;

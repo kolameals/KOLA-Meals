@@ -1,7 +1,28 @@
 import { Request, Response } from 'express';
-import { PrismaClient, OrderStatus } from '@prisma/client';
+import { PrismaClient, OrderStatus, Order, OrderItem, Meal } from '@prisma/client';
 import { z } from 'zod';
-import prisma from '../lib/prisma';
+import prisma from '../lib/prisma.js';
+
+interface GroupedOrderData {
+  amount: number;
+  orderCount: number;
+}
+
+interface ItemSales {
+  quantity: number;
+  revenue: number;
+}
+
+interface TopSellingItem {
+  id: string;
+  name: string;
+  quantity: number;
+  revenue: number;
+}
+
+interface OrderWithItems extends Order {
+  items: OrderItem[];
+}
 
 const analyticsFiltersSchema = z.object({
   startDate: z.string().transform(str => new Date(str)),
@@ -25,10 +46,10 @@ export const analyticsController = {
         include: {
           items: true,
         },
-      });
+      }) as OrderWithItems[];
 
       // Group orders by date
-      const groupedOrders = orders.reduce((acc, order) => {
+      const groupedOrders = orders.reduce((acc: Record<string, GroupedOrderData>, order: OrderWithItems) => {
         const date = order.createdAt.toISOString().split('T')[0];
         if (!acc[date]) {
           acc[date] = {
@@ -39,7 +60,7 @@ export const analyticsController = {
         acc[date].amount += order.amount;
         acc[date].orderCount += 1;
         return acc;
-      }, {} as Record<string, { amount: number; orderCount: number }>);
+      }, {});
 
       // Calculate average order value
       const revenueData = Object.entries(groupedOrders).map(([date, data]) => ({
@@ -90,8 +111,8 @@ export const analyticsController = {
         },
       });
 
-      const currentTotal = currentOrders.reduce((sum, order) => sum + order.amount, 0);
-      const previousTotal = previousOrders.reduce((sum, order) => sum + order.amount, 0);
+      const currentTotal = currentOrders.reduce((sum: number, order: Order) => sum + order.amount, 0);
+      const previousTotal = previousOrders.reduce((sum: number, order: Order) => sum + order.amount, 0);
       const growthRate = previousTotal === 0 ? 100 : ((currentTotal - previousTotal) / previousTotal) * 100;
 
       res.json({
@@ -130,16 +151,16 @@ export const analyticsController = {
         include: {
           items: true,
         },
-      });
+      }) as OrderWithItems[];
 
       // Calculate metrics
-      const totalRevenue = orders.reduce((sum, order) => sum + order.amount, 0);
+      const totalRevenue = orders.reduce((sum: number, order: OrderWithItems) => sum + order.amount, 0);
       const totalOrders = orders.length;
       const averageOrderValue = totalOrders === 0 ? 0 : totalRevenue / totalOrders;
 
       // Get top selling items
-      const itemSales = orders.reduce((acc, order) => {
-        order.items.forEach((item) => {
+      const itemSales = orders.reduce((acc: Record<string, ItemSales>, order: OrderWithItems) => {
+        order.items.forEach((item: OrderItem) => {
           if (!acc[item.mealId]) {
             acc[item.mealId] = {
               quantity: 0,
@@ -150,7 +171,7 @@ export const analyticsController = {
           acc[item.mealId].revenue += item.price * item.quantity;
         });
         return acc;
-      }, {} as Record<string, { quantity: number; revenue: number }>);
+      }, {});
 
       // Get meal details for top selling items
       const topSellingItems = await Promise.all(
@@ -204,5 +225,5 @@ export const analyticsController = {
         res.status(500).json({ success: false, error: 'Internal server error' });
       }
     }
-  },
+  }
 }; 

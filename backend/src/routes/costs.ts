@@ -1,4 +1,4 @@
-import express from 'express';
+import { Router, Request, Response } from 'express';
 import {
   getStaffCosts,
   getStaffCostById,
@@ -13,10 +13,11 @@ import {
   getCostCategories,
   getDeliveryCostConfig,
   updateDeliveryCostConfig
-} from '../controllers/cost.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+} from '../controllers/cost.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { validateRequest } from '../middleware/validation.middleware.js';
 
-const router = express.Router();
+const router = Router();
 
 // Delivery cost configuration
 router.get('/delivery-cost-config', authMiddleware(['ADMIN']), getDeliveryCostConfig);
