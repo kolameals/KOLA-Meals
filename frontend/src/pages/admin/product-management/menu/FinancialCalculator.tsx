@@ -8,11 +8,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { CalendarIcon, Plus, Minus, ChefHat, Users, Package, Building, Info, Wand2, Clock, DollarSign, AlertCircle, Star } from "lucide-react";
-import { recipeService } from '../../../services/recipe.service';
-import type { Recipe } from '../../../services/recipe.service';
-import type { GeneratedRecipe } from '../../../types/recipe.types';
-import { MealCategory, MealType } from '../../../services/meal.service';
-import api, { recipeApi } from '../../../services/api';
+import { recipeService } from '../../../../services/recipe.service';
+import type { Recipe } from '../../../../services/recipe.service';
+import type { GeneratedRecipe } from '../../../../types/recipe.types';
+import { MealCategory, MealType } from '../../../../services/meal.service';
+import api, { recipeApi } from '../../../../services/api';
 import {
   Tooltip,
   TooltipContent,

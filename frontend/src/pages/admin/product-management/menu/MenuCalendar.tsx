@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, addMonths } from 'date-fns';
 import { enUS } from 'date-fns/locale';
-import { menuService } from '../../../services/menu.service';
-import { mealService, type Meal } from '../../../services/meal.service';
-import type { MenuCalendar as MenuCalendarType, DailyMenu, MenuItem } from '../../../types/menu.types';
-import { MealType } from '../../../types/meal.types';
-import MenuItemModal from '../../../components/menu/MenuItemModal';
+import { menuService } from '../../../../services/menu.service';
+import { mealService, type Meal } from '../../../../services/meal.service';
+import type { MenuCalendar as MenuCalendarType, DailyMenu, MenuItem } from '../../../../types/menu.types';
+import { MealType } from '../../../../types/meal.types';
+import MenuItemModal from '../../../../components/menu/MenuItemModal';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = {

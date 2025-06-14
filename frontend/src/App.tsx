@@ -20,20 +20,19 @@ import AdminDashboard from './pages/admin/Dashboard';
 import Analytics from './pages/admin/analytics/Analytics';
 import CustomerAnalytics from './pages/admin/analytics/CustomerAnalytics';
 import KitchenAnalytics from './pages/admin/analytics/KitchenAnalytics';
-import MealManagement from './pages/admin/menu/MealManagement';
 import RawMaterials from './pages/admin/kitchen/RawMaterials';
 import Recipes from './pages/admin/kitchen/Recipes';
-import Production from './pages/admin/kitchen/Production';
-import MenuManagement from './pages/admin/menu/MenuManagement';
-import MenuCalendar from './pages/admin/menu/MenuCalendar';
-import CompanyCosts from './pages/admin/company/CompanyCosts';
+import Production from './pages/admin/product-management/production/Production';
+import MenuManagement from './pages/admin/product-management/menu/MenuManagement';
+import MenuCalendar from './pages/admin/product-management/menu/MenuCalendar';
+import CompanyCosts from './pages/admin/product-management/company/CompanyCosts';
 import Inventory from './pages/admin/operations/Inventory';
 import FeedbackManagement from './pages/admin/feedback/FeedbackManagement';
 import OrderManagement from './pages/admin/orders/OrderManagement';
 import OrderDetails from './pages/admin/orders/OrderDetails';
 import UserManagement from './pages/admin/users/UserManagement';
 
-// Components
+// Components 
 import AuthNavbar from './components/navbar/AuthNavbar';
 import PublicNavbar from './components/navbar/PublicNavbar';
 import Footer from './components/Footer';
@@ -194,14 +193,6 @@ const App = () => {
             element={
               <RoleProtectedRoute allowedRoles={['ADMIN']}>
                 <MenuCalendar />
-              </RoleProtectedRoute>
-            }
-          />
-          <Route
-            path={ROUTES.ADMIN_MEALS}
-            element={
-              <RoleProtectedRoute allowedRoles={['ADMIN']}>
-                <MealManagement />
               </RoleProtectedRoute>
             }
           />

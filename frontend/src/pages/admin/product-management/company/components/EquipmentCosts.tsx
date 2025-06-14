@@ -19,8 +19,8 @@ import {
 import { useAppDispatch } from '@/store';
 import { fetchEquipmentCosts } from '@/store/slices/costSlice';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import AddEquipmentModal from '@/pages/admin/company/components/AddEquipmentModal';
+import { cn } from '@/lib/utils'; 
+import AddEquipmentModal from '@/pages/admin/product-management/company/components/AddEquipmentModal';
 
 interface EquipmentCostsProps {
   equipmentCosts: any[];

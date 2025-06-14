@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../../types/routes';
-import { menuService, MenuNotFoundError } from '../../../services/menu.service';
-import type { DailyMenu } from '../../../types/menu.types';
+import { ROUTES } from '../../../../types/routes';
+import { menuService, MenuNotFoundError } from '../../../../services/menu.service';
+import type { DailyMenu } from '../../../../types/menu.types';
 import MenuCalendar from './MenuCalendar';
 import FinancialCalculator from './FinancialCalculator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

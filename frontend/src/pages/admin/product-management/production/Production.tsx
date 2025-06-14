@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { AppDispatch } from '../../../store';
+import type { AppDispatch } from '../../../../store';
 import {
   fetchSchedules,
   createSchedule,
@@ -10,10 +10,10 @@ import {
   updateProductionItem,
   autoGenerateSchedule,
   clearError
-} from '../../../store/slices/productionSlice';
-import type { RootState } from '../../../store';
-import type { ProductionSchedule, ProductionItem, ProductionStatus, ProductionItemStatus } from '../../../types/production.types';
-import type { MealType } from '../../../services/production.service';
+} from '../../../../store/slices/productionSlice';
+import type { RootState } from '../../../../store';
+import type { ProductionSchedule, ProductionItem, ProductionStatus, ProductionItemStatus } from '../../../../types/production.types';
+import type { MealType } from '../../../../services/production.service';
 
 const MEAL_TYPES: MealType[] = ['BREAKFAST', 'LUNCH', 'DINNER'];
 

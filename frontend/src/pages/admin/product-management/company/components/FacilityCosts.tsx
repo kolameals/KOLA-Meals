@@ -14,7 +14,6 @@ import {
   Zap,
   Home,
   BadgeCheck,
-  Office,
   Warehouse,
   Building
 } from 'lucide-react';
@@ -23,7 +22,7 @@ import { useAppDispatch } from '@/store';
 import { fetchFacilityCosts } from '@/store/slices/costSlice';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import AddFacilityModal from '@/pages/admin/company/components/AddFacilityModal';
+import AddFacilityModal from '@/pages/admin/product-management/company/components/AddFacilityModal';
 import { format } from 'date-fns';
 
 interface FacilityCostsProps {
